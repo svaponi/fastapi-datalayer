@@ -44,11 +44,13 @@ class AuthService:
         self,
         email: str,
         password: str,
+        full_name: str | None = None,
     ) -> uuid.UUID:
         auth_user_id = await self.auth_user_repo.insert(
             AuthUserRecordInsert(
                 email=email,
                 hashed_password=hash_password(password),
+                full_name=full_name,
             )
         )
         return auth_user_id

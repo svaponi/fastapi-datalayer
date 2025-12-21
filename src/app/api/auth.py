@@ -10,6 +10,31 @@ from app.auth.dependencies import get_auth_user
 router = fastapi.APIRouter()
 
 
+class SignupRequest(pydantic.BaseModel):
+    email: str
+    password: str
+    full_name: str | None = None
+
+
+class SignupResponse(pydantic.BaseModel):
+    user_id: uuid.UUID
+
+
+@router.post("/signup")
+async def signup(
+    payload: SignupRequest = fastapi.Body(...),
+    auth_service: AuthService = fastapi.Depends(),
+) -> SignupResponse:
+    user_id = await auth_service.create_user(
+        payload.email,
+        payload.password,
+        payload.full_name,
+    )
+    return SignupResponse(
+        user_id=user_id,
+    )
+
+
 class LoginRequest(pydantic.BaseModel):
     email: str
     password: str
