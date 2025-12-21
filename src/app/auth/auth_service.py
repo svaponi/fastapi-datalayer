@@ -79,8 +79,10 @@ class AuthService:
     ) -> tuple[AuthUserDto, datetime.datetime]:
         try:
             verified = self.jwt_service.validate_token(token)
-            auth_user_id = uuid.UUID(hex=verified["user_id"])
-            expires_at = datetime.datetime.fromisoformat(verified["exp"])
+            auth_user_id = uuid.UUID(hex=verified["sub"])
+            expires_at = datetime.datetime.fromtimestamp(
+                verified["exp"], tz=datetime.UTC
+            )
         except Exception as e:
             raise UnauthorizedException() from e
         auth_user = await self.auth_user_repo.get_or_none_by_id(auth_user_id)
