@@ -8,11 +8,11 @@ from app.auth.auth_service import AuthService, AuthUserDto
 from app.core.errors import UnauthorizedException
 
 
-async def require_api_key(
+async def require_authorization(
     _=fastapi.Depends(
         APIKeyHeader(
-            name="x-api-key",
-            description="Paste the api key",
+            name="authorization",
+            description="Access token including `bearer` prefix",
             auto_error=False,
         )
     ),
@@ -37,7 +37,7 @@ async def get_auth_user(
     request: fastapi.Request,
     response: fastapi.Response,
     auth_service: AuthService = fastapi.Depends(),
-    _=fastapi.Depends(require_api_key),
+    _=fastapi.Depends(require_authorization),
 ) -> AuthUserDto:
     authorization = request.headers.get("authorization")
     if not authorization:

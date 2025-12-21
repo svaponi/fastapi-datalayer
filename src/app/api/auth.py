@@ -4,8 +4,8 @@ import uuid
 import fastapi
 import pydantic
 
+from app.api.dependencies import get_auth_user, set_auth_cookie
 from app.auth.auth_service import AuthService, AuthUserDto
-from app.auth.dependencies import get_auth_user, set_auth_cookie
 
 router = fastapi.APIRouter()
 
