@@ -1,0 +1,82 @@
+name: Deploy
+run-name: Deploy Cloud Run 🚀
+on:
+  # See https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#workflow_dispatch
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests'
+        required: true
+        default: false
+        type: boolean
+  push:
+    branches:
+      - 'main'
+jobs:
+  Deploy-Cloud-Run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DOCKER_IMAGE: '${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/docker/${{ vars.SERVICE_NAME }}:${{ github.sha }}'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions
+      - name: Authenticate with Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/${{ vars.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: 'github-actions@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+          token_format: access_token
+          access_token_lifetime: 300s
+
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v1
+        with:
+          registry: '${{ vars.GCP_REGION }}-docker.pkg.dev'
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Check if docker image exists
+        id: docker-image-exists
+        run: |
+          docker manifest inspect ${{ env.DOCKER_IMAGE }} >/dev/null 2>&1 && exit 0
+          echo "result=not-found" >> $GITHUB_OUTPUT
+
+      - name: Run tests
+        if: steps.docker-image-exists.outputs.result == 'not-found' && github.event.inputs.skip_tests != 'true'
+        uses: ./.github/actions/run-tests
+
+      - name: Build docker image and push to Google Artifact Registry
+        if: steps.docker-image-exists.outputs.result == 'not-found'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: '${{ env.DOCKER_IMAGE }}'
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Cloud Run
+        uses: 'google-github-actions/deploy-cloudrun@v3'
+        # see https://github.com/google-github-actions/deploy-cloudrun?tab=readme-ov-file#inputs
+        with:
+          service: '${{ vars.SERVICE_NAME }}'
+          region: '${{ vars.GCP_REGION }}'
+          image: '${{ env.DOCKER_IMAGE }}'
+          env_vars: |
+            VERSION=${{ steps.date.outputs.date }}.${{ github.sha }}
+            ENABLE_CORS=true
+            ENABLE_DOCS=true
+          secrets: |
+            POSTGRES_URL=PROPERAPP_POSTGRES_URL:latest
+            GMAIL_USERNAME=SAWBLADE_GMAIL_USERNAME:latest
+            GMAIL_APP_PASSWORD=SAWBLADE_GMAIL_APP_PASSWORD:latest

@@ -16,7 +16,7 @@ dependencies = [
     "greenlet (>=3.3.0,<4.0.0)",
     "bcrypt (>=5.0.0,<6.0.0)",
     "pyjwt (>=2.10.1,<3.0.0)",
-    "asyncpg-datalayer @ git+https://github.com/svaponi/asyncpg-datalayer@v0.0.1a3",
+    "asyncpg-datalayer[fastapi] (==0.0.1)",
 ]
 
 [tool.poetry]
@@ -31,6 +31,7 @@ asgi-lifespan = "^2.1.0"
 pytest-asyncio = "^1.3.0"
 httpx = "^0.28.1"
 testcontainers = "^4.13.3"
+asyncpg-datalayer = {version = "0.0.1", extras = ["codegen"]}
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

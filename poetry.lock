@@ -18,7 +18,7 @@ version = "0.7.0"
 description = "Reusable constraint types to use with typing.Annotated"
 optional = false
 python-versions = ">=3.8"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "annotated_types-0.7.0-py3-none-any.whl", hash = "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"},
     {file = "annotated_types-0.7.0.tar.gz", hash = "sha256:aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89"},
@@ -82,7 +82,7 @@ version = "0.31.0"
 description = "An asyncio PostgreSQL driver"
 optional = false
 python-versions = ">=3.9.0"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "asyncpg-0.31.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:831712dd3cf117eec68575a9b50da711893fd63ebe277fc155ecae1c6c9f0f61"},
     {file = "asyncpg-0.31.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:0b17c89312c2f4ccea222a3a6571f7df65d4ba2c0e803339bfc7bed46a96d3be"},
@@ -148,25 +148,21 @@ gssauth = ["gssapi ; platform_system != \"Windows\"", "sspilib ; platform_system
 
 [[package]]
 name = "asyncpg-datalayer"
-version = "0.0.1a3"
+version = "0.0.1"
 description = "Datalayer implementation for Postgres using asyncpg"
 optional = false
-python-versions = ">=3.12,<4.0"
-groups = ["main"]
-files = []
-develop = false
+python-versions = "<4.0,>=3.12"
+groups = ["main", "dev"]
+files = [
+    {file = "asyncpg_datalayer-0.0.1-py3-none-any.whl", hash = "sha256:cafa006409ce015a1fa22575c16bb466f58481fa09ef9869fa09413d07223865"},
+    {file = "asyncpg_datalayer-0.0.1.tar.gz", hash = "sha256:a5013e0e0ba101633ae9dd988c6a2395f1d2db0b7942534ecabba7674216a4a3"},
+]
 
 [package.dependencies]
 asyncpg = ">=0.31.0,<0.32.0"
 greenlet = ">=3.3.0,<4.0.0"
 pydantic = ">=2.12.5,<3.0.0"
 sqlalchemy = ">=2.0.45,<3.0.0"
-
-[package.source]
-type = "git"
-url = "https://github.com/svaponi/asyncpg-datalayer"
-reference = "v0.0.1a3"
-resolved_reference = "4921c02a308f4d7f4333e7f0a252c5da2cddb7c9"
 
 [[package]]
 name = "bcrypt"
@@ -511,7 +507,7 @@ version = "3.3.0"
 description = "Lightweight in-process concurrent programming"
 optional = false
 python-versions = ">=3.10"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "greenlet-3.3.0-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:6f8496d434d5cb2dce025773ba5597f71f5410ae499d5dd9533e0653258cdb3d"},
     {file = "greenlet-3.3.0-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b96dc7eef78fd404e022e165ec55327f935b9b52ff355b067eb4a0267fc1cffb"},
@@ -728,7 +724,7 @@ version = "2.12.5"
 description = "Data validation using Python type hints"
 optional = false
 python-versions = ">=3.9"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "pydantic-2.12.5-py3-none-any.whl", hash = "sha256:e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d"},
     {file = "pydantic-2.12.5.tar.gz", hash = "sha256:4d351024c75c0f085a9febbb665ce8c0c6ec5d30e903bdb6394b7ede26aebb49"},
@@ -750,7 +746,7 @@ version = "2.41.5"
 description = "Core functionality for Pydantic validation and serialization"
 optional = false
 python-versions = ">=3.9"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "pydantic_core-2.41.5-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:77b63866ca88d804225eaa4af3e664c5faf3568cea95360d21f4725ab6e07146"},
     {file = "pydantic_core-2.41.5-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:dfa8a0c812ac681395907e71e1274819dec685fec28273a28905df579ef137e2"},
@@ -1077,7 +1073,7 @@ version = "2.0.45"
 description = "Database Abstraction Library"
 optional = false
 python-versions = ">=3.7"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "sqlalchemy-2.0.45-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:c64772786d9eee72d4d3784c28f0a636af5b0a29f3fe26ff11f55efe90c0bd85"},
     {file = "sqlalchemy-2.0.45-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:7ae64ebf7657395824a19bca98ab10eb9a3ecb026bf09524014f1bb81cb598d4"},
@@ -1252,7 +1248,7 @@ version = "0.4.2"
 description = "Runtime typing introspection tools"
 optional = false
 python-versions = ">=3.9"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "typing_inspection-0.4.2-py3-none-any.whl", hash = "sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7"},
     {file = "typing_inspection-0.4.2.tar.gz", hash = "sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464"},
@@ -1421,4 +1417,4 @@ dev = ["pytest", "setuptools"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "cb672138886b0c92149a2afb69a6f951df7fea8e2adcdb9f0b2e48956b718da4"
+content-hash = "c83ff55084bc4d2f1b7812e67c5b9c71954e9a105177eb133d254314645bdaa0"

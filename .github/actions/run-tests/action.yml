@@ -1,0 +1,24 @@
+# See https://github.com/GuillaumeFalourd/poc-github-actions/blob/main/.github/workflows/local-action/action.yaml
+
+name: Test
+description: Run Tests 🧪
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install poetry
+      shell: bash
+      run: pipx install poetry
+    - name: Set up python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.13
+        cache: 'poetry'
+    - name: Install dependencies
+      shell: bash
+      run: |
+        poetry install
+    - name: Run tests
+      shell: bash
+      run: |
+        poetry run pytest
