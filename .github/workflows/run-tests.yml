@@ -2,10 +2,13 @@ name: Test
 run-name: Run Tests 🧪
 on:
   push:
+    branches-ignore:
+      - 'main'
     paths:
       - 'src/app/**'
       - 'tests/**'
       - '.github/workflows/run-tests.yml'
+      - '.github/actions/run-tests/**'
 jobs:
   Run-Tests:
     runs-on: ubuntu-latest
