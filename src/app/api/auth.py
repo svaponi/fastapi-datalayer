@@ -5,7 +5,7 @@ import fastapi
 import pydantic
 
 from app.auth.auth_service import AuthService, AuthUserDto
-from app.auth.dependencies import get_auth_user
+from app.auth.dependencies import get_auth_user, set_auth_cookie
 
 router = fastapi.APIRouter()
 
@@ -48,10 +48,16 @@ class LoginResponse(pydantic.BaseModel):
 
 @router.post("/login")
 async def login(
+    response: fastapi.Response,
     payload: LoginRequest = fastapi.Body(...),
     auth_service: AuthService = fastapi.Depends(),
 ) -> LoginResponse:
     dto = await auth_service.login_by_credentials(payload.email, payload.password)
+    set_auth_cookie(
+        response,
+        token=dto.access_token,
+        expires_at=dto.expires_at,
+    )
     return LoginResponse(
         user_id=dto.user_id,
         expires_at=dto.expires_at,

@@ -1,3 +1,4 @@
+import datetime
 import re
 
 import fastapi
@@ -19,6 +20,19 @@ async def require_api_key(
     pass
 
 
+def set_auth_cookie(
+    response: fastapi.Response,
+    token: str,
+    expires_at: datetime.datetime,
+) -> None:
+    response.set_cookie(
+        "authorization",
+        f"bearer {token}",
+        httponly=True,
+        expires=expires_at,
+    )
+
+
 async def get_auth_user(
     request: fastapi.Request,
     response: fastapi.Response,
@@ -32,11 +46,10 @@ async def get_auth_user(
         token = authorization[7:]
         auth_user, expires_at = await auth_service.get_user_by_token(token)
         if auth_user:
-            response.set_cookie(
-                "authorization",
-                authorization,
-                httponly=True,
-                expires=expires_at,
+            set_auth_cookie(
+                response,
+                token=token,
+                expires_at=expires_at,
             )
             return auth_user
     raise UnauthorizedException()
