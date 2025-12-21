@@ -1,0 +1,51 @@
+import datetime
+import uuid
+
+import fastapi
+import pydantic
+
+from app.auth.auth_service import AuthService, AuthUserDto
+from app.auth.dependencies import get_auth_user
+
+router = fastapi.APIRouter()
+
+
+class LoginRequest(pydantic.BaseModel):
+    email: str
+    password: str
+
+
+class LoginResponse(pydantic.BaseModel):
+    user_id: uuid.UUID
+    expires_at: datetime.datetime
+    access_token: str
+
+
+@router.post("/login")
+async def login(
+    payload: LoginRequest = fastapi.Body(...),
+    auth_service: AuthService = fastapi.Depends(),
+) -> LoginResponse:
+    dto = await auth_service.login_by_credentials(payload.email, payload.password)
+    return LoginResponse(
+        user_id=dto.user_id,
+        expires_at=dto.expires_at,
+        access_token=dto.access_token,
+    )
+
+
+class WhoamiResponse(pydantic.BaseModel):
+    user_id: uuid.UUID
+    email: str
+    full_name: str | None
+
+
+@router.get("/whoami")
+async def whoami(
+    auth_user: AuthUserDto = fastapi.Depends(get_auth_user),
+) -> WhoamiResponse:
+    return WhoamiResponse(
+        user_id=auth_user.user_id,
+        email=auth_user.email,
+        full_name=auth_user.full_name,
+    )
