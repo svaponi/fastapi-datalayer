@@ -74,7 +74,7 @@ jobs:
           image: '${{ env.DOCKER_IMAGE }}'
           env_vars: |
             VERSION=${{ steps.date.outputs.date }}.${{ github.sha }}
-            ENABLE_CORS=true
+            CORS_ENABLED=true
             ENABLE_DOCS=true
           secrets: |
             POSTGRES_URL=PROPERAPP_POSTGRES_URL:latest
