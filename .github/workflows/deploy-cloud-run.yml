@@ -75,7 +75,7 @@ jobs:
           env_vars: |
             VERSION=${{ steps.date.outputs.date }}.${{ github.sha }}
             CORS_ENABLED=true
-            ENABLE_DOCS=true
+            DOCS_ENABLED=true
           secrets: |
             POSTGRES_URL=PROPERAPP_POSTGRES_URL:latest
             GMAIL_USERNAME=SAWBLADE_GMAIL_USERNAME:latest

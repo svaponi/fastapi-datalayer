@@ -47,8 +47,8 @@ class App(fastapi.FastAPI):
             title=f"{self.config.get_app_name()} API",
             description="[GitHub](https://github.com/zym-tools/zym-be)",
             version=self.config.VERSION,
-            docs_url="/api/docs" if self.config.ENABLE_DOCS else None,
-            openapi_url="/api/openapi.json" if self.config.ENABLE_DOCS else None,
+            docs_url="/api/docs" if self.config.DOCS_ENABLED else None,
+            openapi_url="/api/openapi.json" if self.config.DOCS_ENABLED else None,
             **extra,
         )
 

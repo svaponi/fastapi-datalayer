@@ -34,7 +34,7 @@ async def test_docs_not_found(aclient):
 
 @pytest.fixture
 def env_vars_enable_docs(env_vars):
-    with mock_environ(ENABLE_DOCS="1"):
+    with mock_environ(DOCS_ENABLED="1"):
         yield
 
 

@@ -27,7 +27,7 @@ class AppConfig(pydantic_settings.BaseSettings):
     APP_NAME: str = "foobar"
     ENV_NAME: EnvName = EnvName.local
     VERSION: str = "undefined"
-    ENABLE_DOCS: bool = False
+    DOCS_ENABLED: bool = False
     TOKEN_SECRET: str = pydantic.Field(default_factory=lambda: uuid.uuid4().hex)
     cors: CorsConfig = pydantic.Field(default_factory=CorsConfig)
     log: LogConfig = pydantic.Field(default_factory=LogConfig)
