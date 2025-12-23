@@ -23,6 +23,11 @@ class LogConfig(pydantic_settings.BaseSettings):
     )
 
 
+class NotificationConfig(pydantic_settings.BaseSettings):
+    VAPID_PUBLIC_KEY: str | None = None
+    VAPID_PRIVATE_KEY: str | None = None
+
+
 class AppConfig(pydantic_settings.BaseSettings):
     APP_NAME: str = "foobar"
     ENV_NAME: EnvName = EnvName.local
@@ -32,6 +37,9 @@ class AppConfig(pydantic_settings.BaseSettings):
     cors: CorsConfig = pydantic.Field(default_factory=CorsConfig)
     log: LogConfig = pydantic.Field(default_factory=LogConfig)
     email: EmailConfig = pydantic.Field(default_factory=EmailConfig)
+    notification: NotificationConfig = pydantic.Field(
+        default_factory=NotificationConfig
+    )
 
     def is_prod(self):
         return self.ENV_NAME == EnvName.production

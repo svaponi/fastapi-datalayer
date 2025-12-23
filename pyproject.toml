@@ -17,6 +17,7 @@ dependencies = [
     "bcrypt (>=5.0.0,<6.0.0)",
     "pyjwt (>=2.10.1,<3.0.0)",
     "asyncpg-datalayer[fastapi] (==0.0.1)",
+    "pywebpush (>=2.1.2,<3.0.0)",
 ]
 
 [tool.poetry]
