@@ -1,50 +1,57 @@
+import datetime
 import sys
 import uuid
 
-
 import fastapi
-
 import pydantic
-import sqlalchemy
 import sqlalchemy.orm
-
 from asyncpg_datalayer.base_repository import BaseRepository
 from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class UserDeviceTable(Base):
-    __tablename__ = "user_device"
+class ChatMessageTable(Base):
+    __tablename__ = "chat_message"
     __table_args__ = (
-        sqlalchemy.PrimaryKeyConstraint("user_device_id", name="user_device_pkey"),
+        sqlalchemy.PrimaryKeyConstraint("chat_message_id", name="chat_message_pkey"),
     )
-    user_device_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
+    chat_message_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid,
         primary_key=True,
         server_default=sqlalchemy.text("uuid_generate_v4()"),
     )
+    chat_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.Uuid
+    )
     auth_user_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid
     )
-    subscription_info: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
+    entered_at: sqlalchemy.orm.Mapped[datetime.datetime] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.DateTime, server_default=sqlalchemy.text("now()")
+    )
+    content: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
         sqlalchemy.String
     )
 
 
-UserDeviceRecord = UserDeviceTable
+ChatMessageRecord = ChatMessageTable
 
 
-class UserDeviceRecordInsert(pydantic.BaseModel):
+class ChatMessageRecordInsert(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
-    user_device_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    chat_message_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    chat_id: uuid.UUID
     auth_user_id: uuid.UUID
-    subscription_info: str | None = None
+    entered_at: datetime.datetime = datetime.datetime.now()
+    content: str | None = None
 
 
-class UserDeviceRecordUpdate(pydantic.BaseModel):
+class ChatMessageRecordUpdate(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
+    chat_id: uuid.UUID | None = None
     auth_user_id: uuid.UUID | None = None
-    subscription_info: str | None = None
+    entered_at: datetime.datetime | None = None
+    content: str | None = None
 
 
 def get_db(request: fastapi.Request) -> DB:
@@ -66,8 +73,8 @@ def get_db(request: fastapi.Request) -> DB:
     return request.app.state.db
 
 
-class UserDeviceRepository(BaseRepository[UserDeviceRecord]):
+class ChatMessageRepository(BaseRepository[ChatMessageRecord]):
     def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
-        super().__init__(db, UserDeviceRecord)
+        super().__init__(db, ChatMessageRecord)
 
     ### custom methods go below ###

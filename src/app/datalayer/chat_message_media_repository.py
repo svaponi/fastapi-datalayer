@@ -13,15 +13,22 @@ from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class UserDeviceTable(Base):
-    __tablename__ = "user_device"
+class ChatMessageMediaTable(Base):
+    __tablename__ = "chat_message_media"
     __table_args__ = (
-        sqlalchemy.PrimaryKeyConstraint("user_device_id", name="user_device_pkey"),
+        sqlalchemy.PrimaryKeyConstraint(
+            "chat_message_media_id", name="chat_message_media_pkey"
+        ),
     )
-    user_device_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
-        sqlalchemy.Uuid,
-        primary_key=True,
-        server_default=sqlalchemy.text("uuid_generate_v4()"),
+    chat_message_media_id: sqlalchemy.orm.Mapped[uuid.UUID] = (
+        sqlalchemy.orm.mapped_column(
+            sqlalchemy.Uuid,
+            primary_key=True,
+            server_default=sqlalchemy.text("uuid_generate_v4()"),
+        )
+    )
+    chat_message_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.Uuid
     )
     auth_user_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid
@@ -31,18 +38,20 @@ class UserDeviceTable(Base):
     )
 
 
-UserDeviceRecord = UserDeviceTable
+ChatMessageMediaRecord = ChatMessageMediaTable
 
 
-class UserDeviceRecordInsert(pydantic.BaseModel):
+class ChatMessageMediaRecordInsert(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
-    user_device_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    chat_message_media_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    chat_message_id: uuid.UUID
     auth_user_id: uuid.UUID
     subscription_info: str | None = None
 
 
-class UserDeviceRecordUpdate(pydantic.BaseModel):
+class ChatMessageMediaRecordUpdate(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
+    chat_message_id: uuid.UUID | None = None
     auth_user_id: uuid.UUID | None = None
     subscription_info: str | None = None
 
@@ -66,8 +75,8 @@ def get_db(request: fastapi.Request) -> DB:
     return request.app.state.db
 
 
-class UserDeviceRepository(BaseRepository[UserDeviceRecord]):
+class ChatMessageMediaRepository(BaseRepository[ChatMessageMediaRecord]):
     def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
-        super().__init__(db, UserDeviceRecord)
+        super().__init__(db, ChatMessageMediaRecord)
 
     ### custom methods go below ###

@@ -98,3 +98,30 @@ class NotificationService:
                 self.logger.error(e.message)
                 if e.response.status_code == 410:
                     await self.unsubscribe(subscription_info)
+
+    async def send(self, payload: dict, auth_user_ids: list[uuid.UUID] | None = None):
+        if not self.vapid_private_key:
+            raise RuntimeError(
+                "VAPID keys not configured, cannot send push notifications"
+            )
+
+        data = json.dumps(payload)
+        subscriptions = await self.user_device_repo.get_all(
+            filters={"auth_user_id": auth_user_ids}
+        )
+        for sub in subscriptions:
+            if not sub.subscription_info:
+                continue
+            subscription_info = json.loads(sub.subscription_info)
+            try:
+                self.logger.info(f"Sending push to {subscription_info}")
+                pywebpush.webpush(
+                    subscription_info=subscription_info,
+                    data=data,
+                    vapid_private_key=self.vapid_private_key,
+                    vapid_claims={"sub": "mailto:you@example.com"},
+                )
+            except pywebpush.WebPushException as e:
+                self.logger.error(e.message)
+                if e.response.status_code == 410:
+                    await self.unsubscribe(subscription_info)

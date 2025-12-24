@@ -13,38 +13,34 @@ from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class UserDeviceTable(Base):
-    __tablename__ = "user_device"
-    __table_args__ = (
-        sqlalchemy.PrimaryKeyConstraint("user_device_id", name="user_device_pkey"),
-    )
-    user_device_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
+class ChatTable(Base):
+    __tablename__ = "chat"
+    __table_args__ = (sqlalchemy.PrimaryKeyConstraint("chat_id", name="chat_pkey"),)
+    chat_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid,
         primary_key=True,
         server_default=sqlalchemy.text("uuid_generate_v4()"),
     )
-    auth_user_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
-        sqlalchemy.Uuid
+    auth_user_ids: sqlalchemy.orm.Mapped[list[uuid.UUID]] = (
+        sqlalchemy.orm.mapped_column(
+            sqlalchemy.ARRAY(sqlalchemy.Uuid),
+            server_default=sqlalchemy.text("ARRAY[]::uuid[]"),
+        )
     )
-    subscription_info: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
-        sqlalchemy.String
-    )
 
 
-UserDeviceRecord = UserDeviceTable
+ChatRecord = ChatTable
 
 
-class UserDeviceRecordInsert(pydantic.BaseModel):
+class ChatRecordInsert(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
-    user_device_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
-    auth_user_id: uuid.UUID
-    subscription_info: str | None = None
+    chat_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    auth_user_ids: list[uuid.UUID] = pydantic.Field(default_factory=list)
 
 
-class UserDeviceRecordUpdate(pydantic.BaseModel):
+class ChatRecordUpdate(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
-    auth_user_id: uuid.UUID | None = None
-    subscription_info: str | None = None
+    auth_user_ids: list[uuid.UUID] | None = None
 
 
 def get_db(request: fastapi.Request) -> DB:
@@ -66,8 +62,8 @@ def get_db(request: fastapi.Request) -> DB:
     return request.app.state.db
 
 
-class UserDeviceRepository(BaseRepository[UserDeviceRecord]):
+class ChatRepository(BaseRepository[ChatRecord]):
     def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
-        super().__init__(db, UserDeviceRecord)
+        super().__init__(db, ChatRecord)
 
     ### custom methods go below ###
