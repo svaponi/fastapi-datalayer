@@ -15,6 +15,7 @@ from app.core.correlation_id import setup_correlation_id
 from app.core.cors import setup_cors
 from app.core.error_handlers import setup_error_handlers
 from app.core.logs import setup_logging
+from app.domain.setup import create_defaults
 from app.email.email_client_factory import create_email_client
 
 
@@ -22,6 +23,7 @@ from app.email.email_client_factory import create_email_client
 async def _lifespan(app: "App"):
     app.logger.info(f"Starting 🔄")
     await apply_migrations(app.db.postgres_url, migrations_dir)
+    await create_defaults(app.db)
     # ...
     app.logger.info("Started ✅ ")
     yield
