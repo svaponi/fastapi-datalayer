@@ -1,19 +1,14 @@
-import sys
 import uuid
-
-
-import fastapi
 
 import pydantic
 import sqlalchemy
 import sqlalchemy.orm
-
 from asyncpg_datalayer.base_repository import BaseRepository
 from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class AuthUserTable(Base):
+class _AuthUserTable(Base):
     __tablename__ = "auth_user"
     __table_args__ = (
         sqlalchemy.PrimaryKeyConstraint("auth_user_id", name="auth_user_pkey"),
@@ -35,7 +30,7 @@ class AuthUserTable(Base):
     )
 
 
-AuthUserRecord = AuthUserTable
+AuthUserRecord = _AuthUserTable
 
 
 class AuthUserRecordInsert(pydantic.BaseModel):
@@ -55,27 +50,8 @@ class AuthUserRecordUpdate(pydantic.BaseModel):
     full_name: str | None = None
 
 
-def get_db(request: fastapi.Request) -> DB:
-    if not hasattr(request.app.state, "db"):
-        message = """DB not found in app.state.
-        Make sure to initialize the DB in your FastAPI app like this:
-
-        ```
-        import os
-        import fastapi
-        from asyncpg_datalayer.db_factory import create_db
-
-        app = fastapi.FastAPI()
-        app.state.db = create_db()
-        ```
-        """
-        print(message, file=sys.stderr)
-        raise RuntimeError("DB not found in app.state")
-    return request.app.state.db
-
-
 class AuthUserRepository(BaseRepository[AuthUserRecord]):
-    def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
+    def __init__(self, db: DB) -> None:
         super().__init__(db, AuthUserRecord)
 
     ### custom methods go below ###
@@ -85,8 +61,8 @@ class AuthUserRepository(BaseRepository[AuthUserRecord]):
         email: str,
         filters: dict | None = None,
     ) -> AuthUserRecord | None:
-        query = sqlalchemy.select(AuthUserTable).where(
-            AuthUserTable.email == email,
+        query = sqlalchemy.select(_AuthUserTable).where(
+            _AuthUserTable.email == email,
         )
         query = self._with_filters(query, filters)
         async with self.db.get_session(readonly=True) as session:

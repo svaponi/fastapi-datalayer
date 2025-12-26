@@ -4,7 +4,7 @@ import logging
 from asyncpg_datalayer.db import DB
 
 from app.auth.utils import hash_password
-from app.datalayer.auth_user_repository import AuthUserRepository, AuthUserRecordInsert
+from app.datalayer.auth_user import AuthUserRepository, AuthUserRecordInsert
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,5 @@
-import sys
+import datetime
 import uuid
-
-
-import fastapi
 
 import pydantic
 import sqlalchemy
@@ -13,7 +10,7 @@ from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class ChatMessageMediaTable(Base):
+class _ChatMessageMediaTable(Base):
     __tablename__ = "chat_message_media"
     __table_args__ = (
         sqlalchemy.PrimaryKeyConstraint(
@@ -38,7 +35,7 @@ class ChatMessageMediaTable(Base):
     )
 
 
-ChatMessageMediaRecord = ChatMessageMediaTable
+ChatMessageMediaRecord = _ChatMessageMediaTable
 
 
 class ChatMessageMediaRecordInsert(pydantic.BaseModel):
@@ -56,27 +53,8 @@ class ChatMessageMediaRecordUpdate(pydantic.BaseModel):
     media: str | None = None
 
 
-def get_db(request: fastapi.Request) -> DB:
-    if not hasattr(request.app.state, "db"):
-        message = """DB not found in app.state.
-        Make sure to initialize the DB in your FastAPI app like this:
-
-        ```
-        import os
-        import fastapi
-        from asyncpg_datalayer.db_factory import create_db
-
-        app = fastapi.FastAPI()
-        app.state.db = create_db()
-        ```
-        """
-        print(message, file=sys.stderr)
-        raise RuntimeError("DB not found in app.state")
-    return request.app.state.db
-
-
 class ChatMessageMediaRepository(BaseRepository[ChatMessageMediaRecord]):
-    def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
+    def __init__(self, db: DB) -> None:
         super().__init__(db, ChatMessageMediaRecord)
 
     ### custom methods go below ###

@@ -1,8 +1,5 @@
-import sys
+import datetime
 import uuid
-
-
-import fastapi
 
 import pydantic
 import sqlalchemy
@@ -13,7 +10,7 @@ from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class UserDeviceTable(Base):
+class _UserDeviceTable(Base):
     __tablename__ = "user_device"
     __table_args__ = (
         sqlalchemy.PrimaryKeyConstraint("user_device_id", name="user_device_pkey"),
@@ -31,7 +28,7 @@ class UserDeviceTable(Base):
     )
 
 
-UserDeviceRecord = UserDeviceTable
+UserDeviceRecord = _UserDeviceTable
 
 
 class UserDeviceRecordInsert(pydantic.BaseModel):
@@ -47,27 +44,8 @@ class UserDeviceRecordUpdate(pydantic.BaseModel):
     subscription_info: str | None = None
 
 
-def get_db(request: fastapi.Request) -> DB:
-    if not hasattr(request.app.state, "db"):
-        message = """DB not found in app.state.
-        Make sure to initialize the DB in your FastAPI app like this:
-
-        ```
-        import os
-        import fastapi
-        from asyncpg_datalayer.db_factory import create_db
-
-        app = fastapi.FastAPI()
-        app.state.db = create_db()
-        ```
-        """
-        print(message, file=sys.stderr)
-        raise RuntimeError("DB not found in app.state")
-    return request.app.state.db
-
-
 class UserDeviceRepository(BaseRepository[UserDeviceRecord]):
-    def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
+    def __init__(self, db: DB) -> None:
         super().__init__(db, UserDeviceRecord)
 
     ### custom methods go below ###

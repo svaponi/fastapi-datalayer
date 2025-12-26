@@ -1,8 +1,5 @@
-import sys
+import datetime
 import uuid
-
-
-import fastapi
 
 import pydantic
 import sqlalchemy
@@ -13,7 +10,7 @@ from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class AgencyTable(Base):
+class _AgencyTable(Base):
     __tablename__ = "agency"
     __table_args__ = (sqlalchemy.PrimaryKeyConstraint("agency_id", name="agency_pkey"),)
     agency_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
@@ -29,7 +26,7 @@ class AgencyTable(Base):
     )
 
 
-AgencyRecord = AgencyTable
+AgencyRecord = _AgencyTable
 
 
 class AgencyRecordInsert(pydantic.BaseModel):
@@ -45,27 +42,8 @@ class AgencyRecordUpdate(pydantic.BaseModel):
     agency_display_name: str | None = None
 
 
-def get_db(request: fastapi.Request) -> DB:
-    if not hasattr(request.app.state, "db"):
-        message = """DB not found in app.state.
-        Make sure to initialize the DB in your FastAPI app like this:
-
-        ```
-        import os
-        import fastapi
-        from asyncpg_datalayer.db_factory import create_db
-
-        app = fastapi.FastAPI()
-        app.state.db = create_db()
-        ```
-        """
-        print(message, file=sys.stderr)
-        raise RuntimeError("DB not found in app.state")
-    return request.app.state.db
-
-
 class AgencyRepository(BaseRepository[AgencyRecord]):
-    def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
+    def __init__(self, db: DB) -> None:
         super().__init__(db, AgencyRecord)
 
     ### custom methods go below ###

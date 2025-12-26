@@ -8,11 +8,11 @@ import pydantic
 from app.auth.jwt_service import JwtService
 from app.auth.utils import hash_password, verify_hashed_password
 from app.core.errors import UnauthorizedException
-from app.datalayer.auth_user_repository import (
-    AuthUserRepository,
+from app.datalayer.auth_user import (
     AuthUserRecordInsert,
     AuthUserRecord,
 )
+from app.datalayer.facade import DatalayerFacade
 
 
 class AccessTokenDto(pydantic.BaseModel):
@@ -31,12 +31,12 @@ class AuthUserDto(pydantic.BaseModel):
 class AuthService:
     def __init__(
         self,
-        auth_user_repo: AuthUserRepository = fastapi.Depends(),
+        facade: DatalayerFacade = fastapi.Depends(),
         jwt_service: JwtService = fastapi.Depends(),
     ) -> None:
         super().__init__()
         self.logger = logging.getLogger(f"{self.__module__}.{type(self).__name__}")
-        self.auth_user_repo = auth_user_repo
+        self.auth_user_repo = facade.auth_user
         self.jwt_service = jwt_service
         self.jwt_ttl = 300
 

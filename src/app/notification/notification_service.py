@@ -10,8 +10,8 @@ from app.api.dependencies import get_auth_user
 from app.auth.auth_service import AuthUserDto
 from app.core.config import AppConfig, NotificationConfig
 from app.core.dependencies import get_app_config
-from app.datalayer.user_device_repository import (
-    UserDeviceRepository,
+from app.datalayer.facade import DatalayerFacade
+from app.datalayer.user_device import (
     UserDeviceRecordInsert,
 )
 
@@ -34,13 +34,13 @@ class NotificationService:
     def __init__(
         self,
         auth_user: AuthUserDto = fastapi.Depends(get_auth_user),
-        user_device_repo: UserDeviceRepository = fastapi.Depends(),
+        facade: DatalayerFacade = fastapi.Depends(),
         notification_config: NotificationConfig = fastapi.Depends(
             get_notification_config
         ),
     ) -> None:
         self.auth_user = auth_user
-        self.user_device_repo = user_device_repo
+        self.user_device_repo = facade.user_device
         self.vapid_private_key = notification_config.VAPID_PRIVATE_KEY
         self.logger = logging.getLogger(__name__)
 

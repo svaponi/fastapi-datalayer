@@ -13,8 +13,9 @@ def env_vars(postgres_url):
     with mock_environ(
         dotenv_file=".env.test",
         POSTGRES_URL=postgres_url,
-        # Set pool size to 1 to make it easier to reproduce the error
-        POOL_SIZE="1",
+        # Set low pool size to make it easier to produce a 429.
+        # Remember that create_defaults needs to run successfully first!
+        POOL_SIZE="5",
         POOL_MAX_OVERFLOW="0",
         POOL_TIMEOUT="0",
     ):
@@ -23,12 +24,11 @@ def env_vars(postgres_url):
 
 @pytest.mark.asyncio
 async def test_too_many_requests(aclient):
+    _creds = {"email": "jdoe@example.com", "password": "secret"}
 
-    _creds = {"email": "user", "password": "secret"}
-
-    async def _get():
+    async def _login():
         return (await aclient.post(f"/api/auth/login", json=_creds)).status_code
 
-    status_codes = await asyncio.gather(*[_get() for _ in range(10)])
+    status_codes = await asyncio.gather(*[_login() for _ in range(10)])
     assert 500 not in status_codes
     assert 429 in status_codes

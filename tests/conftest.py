@@ -11,6 +11,7 @@ from testcontainers.postgres import PostgresContainer
 
 from app import migrations_dir
 from app.app import create_app
+from app.datalayer.facade import DatalayerFacade
 from tests.testutils.mock_environ import mock_environ
 
 
@@ -41,6 +42,11 @@ async def postgres_url(postgres_container: PostgresContainer):
 async def db(postgres_url):
     await apply_migrations(postgres_url, migrations_dir)
     yield DB(postgres_url, echo=True)
+
+
+@pytest.fixture
+def facade(db):
+    return DatalayerFacade(db)
 
 
 @pytest.fixture

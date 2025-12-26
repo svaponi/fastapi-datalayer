@@ -7,17 +7,10 @@ from app.api.dependencies import get_auth_user
 from app.auth.auth_service import AuthUserDto
 from app.core.config import AppConfig, NotificationConfig
 from app.core.dependencies import get_app_config
-from app.datalayer.auth_user_repository import AuthUserRepository
-from app.datalayer.chat_message_recipient_repository import (
-    ChatMessageRecipientRecordInsert,
-    ChatMessageRecipientRepository,
-)
-from app.datalayer.chat_message_repository import (
-    ChatMessageRepository,
-    ChatMessageRecordInsert,
-    ChatMessageRecord,
-)
-from app.datalayer.chat_repository import ChatRepository, ChatRecordInsert, ChatRecord
+from app.datalayer.chat import ChatRecordInsert, ChatRecord
+from app.datalayer.chat_message import ChatMessageRecordInsert, ChatMessageRecord
+from app.datalayer.chat_message_recipient import ChatMessageRecipientRecordInsert
+from app.datalayer.facade import DatalayerFacade
 from app.notification.notification_service import NotificationService
 
 
@@ -39,18 +32,15 @@ class MessageService:
     def __init__(
         self,
         auth_user: AuthUserDto = fastapi.Depends(get_auth_user),
-        auth_user_repo: AuthUserRepository = fastapi.Depends(),
-        chat_repo: ChatRepository = fastapi.Depends(),
-        chat_message_repo: ChatMessageRepository = fastapi.Depends(),
-        chat_message_recipient_repo: ChatMessageRecipientRepository = fastapi.Depends(),
+        facade: DatalayerFacade = fastapi.Depends(),
         notification_service: NotificationService = fastapi.Depends(),
     ) -> None:
         self.logger = logging.getLogger(__name__)
         self.auth_user = auth_user
-        self.auth_user_repo = auth_user_repo
-        self.chat_repo = chat_repo
-        self.chat_message_repo = chat_message_repo
-        self.chat_message_recipient_repo = chat_message_recipient_repo
+        self.auth_user_repo = facade.auth_user
+        self.chat_repo = facade.chat
+        self.chat_message_repo = facade.chat_message
+        self.chat_message_recipient_repo = facade.chat_message_recipient
         self.notification_service = notification_service
 
     async def create_chat(

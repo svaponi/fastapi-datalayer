@@ -1,16 +1,16 @@
 import datetime
-import sys
 import uuid
 
-import fastapi
 import pydantic
+import sqlalchemy
 import sqlalchemy.orm
+
 from asyncpg_datalayer.base_repository import BaseRepository
 from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class ChatMessageRecipientTable(Base):
+class _ChatMessageRecipientTable(Base):
     __tablename__ = "chat_message_recipient"
     __table_args__ = (
         sqlalchemy.PrimaryKeyConstraint(
@@ -47,7 +47,7 @@ class ChatMessageRecipientTable(Base):
     )
 
 
-ChatMessageRecipientRecord = ChatMessageRecipientTable
+ChatMessageRecipientRecord = _ChatMessageRecipientTable
 
 
 class ChatMessageRecipientRecordInsert(pydantic.BaseModel):
@@ -56,7 +56,9 @@ class ChatMessageRecipientRecordInsert(pydantic.BaseModel):
     chat_message_id: uuid.UUID
     chat_id: uuid.UUID
     to_user_id: uuid.UUID
-    entered_at: datetime.datetime = datetime.datetime.now()
+    entered_at: datetime.datetime = pydantic.Field(
+        default_factory=datetime.datetime.now
+    )
     notified_at: datetime.datetime | None = None
     sent_at: datetime.datetime | None = None
     read_at: datetime.datetime | None = None
@@ -73,27 +75,8 @@ class ChatMessageRecipientRecordUpdate(pydantic.BaseModel):
     read_at: datetime.datetime | None = None
 
 
-def get_db(request: fastapi.Request) -> DB:
-    if not hasattr(request.app.state, "db"):
-        message = """DB not found in app.state.
-        Make sure to initialize the DB in your FastAPI app like this:
-
-        ```
-        import os
-        import fastapi
-        from asyncpg_datalayer.db_factory import create_db
-
-        app = fastapi.FastAPI()
-        app.state.db = create_db()
-        ```
-        """
-        print(message, file=sys.stderr)
-        raise RuntimeError("DB not found in app.state")
-    return request.app.state.db
-
-
 class ChatMessageRecipientRepository(BaseRepository[ChatMessageRecipientRecord]):
-    def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
+    def __init__(self, db: DB) -> None:
         super().__init__(db, ChatMessageRecipientRecord)
 
     ### custom methods go below ###

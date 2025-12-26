@@ -1,22 +1,7 @@
-import datetime
-import typing
-
 import pytest
 
 from app.auth.auth_service import AuthService
 from app.auth.jwt_service import JwtService
-from app.datalayer.auth_user_repository import AuthUserRepository
-
-
-class _JwtService:
-
-    def validate_token(self, token: str) -> dict[str, typing.Any]:
-        return {}
-
-    def create_token(
-        self, content: typing.Any, expires_in: int, now: datetime.datetime | None = None
-    ) -> tuple[str, datetime.datetime]:
-        return "you're good to go", datetime.datetime.now(datetime.UTC)
 
 
 @pytest.fixture
@@ -25,8 +10,8 @@ def jwt_service():
 
 
 @pytest.fixture
-def auth_service(db, jwt_service):
-    return AuthService(auth_user_repo=AuthUserRepository(db), jwt_service=jwt_service)
+def auth_service(facade, jwt_service):
+    return AuthService(facade=facade, jwt_service=jwt_service)
 
 
 @pytest.mark.asyncio
