@@ -23,7 +23,7 @@ class ChatMessageTable(Base):
     chat_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid
     )
-    auth_user_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
+    from_user_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid
     )
     entered_at: sqlalchemy.orm.Mapped[datetime.datetime] = sqlalchemy.orm.mapped_column(
@@ -41,7 +41,7 @@ class ChatMessageRecordInsert(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
     chat_message_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     chat_id: uuid.UUID
-    auth_user_id: uuid.UUID
+    from_user_id: uuid.UUID
     entered_at: datetime.datetime = datetime.datetime.now()
     content: str | None = None
 
@@ -49,7 +49,7 @@ class ChatMessageRecordInsert(pydantic.BaseModel):
 class ChatMessageRecordUpdate(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
     chat_id: uuid.UUID | None = None
-    auth_user_id: uuid.UUID | None = None
+    from_user_id: uuid.UUID | None = None
     entered_at: datetime.datetime | None = None
     content: str | None = None
 

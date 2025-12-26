@@ -30,10 +30,10 @@ class ChatMessageMediaTable(Base):
     chat_message_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid
     )
-    auth_user_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
+    chat_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid
     )
-    subscription_info: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
+    media: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
         sqlalchemy.String
     )
 
@@ -45,15 +45,15 @@ class ChatMessageMediaRecordInsert(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
     chat_message_media_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     chat_message_id: uuid.UUID
-    auth_user_id: uuid.UUID
-    subscription_info: str | None = None
+    chat_id: uuid.UUID
+    media: str | None = None
 
 
 class ChatMessageMediaRecordUpdate(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
     chat_message_id: uuid.UUID | None = None
-    auth_user_id: uuid.UUID | None = None
-    subscription_info: str | None = None
+    chat_id: uuid.UUID | None = None
+    media: str | None = None
 
 
 def get_db(request: fastapi.Request) -> DB:

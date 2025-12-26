@@ -5,6 +5,7 @@ import fastapi
 import pydantic
 
 from app.domain.messages.message_service import MessageService
+from app.domain.user.user_service import UserService
 
 router = fastapi.APIRouter()
 
@@ -51,6 +52,7 @@ async def new_message(
 class ChatMessageDto(pydantic.BaseModel):
     message_id: uuid.UUID
     from_user_id: uuid.UUID
+    from_user: str
     entered_at: datetime.datetime
     content: str
 
@@ -59,12 +61,16 @@ class ChatMessageDto(pydantic.BaseModel):
 async def get_messages(
     chat_id: uuid.UUID,
     message_service: MessageService = fastapi.Depends(),
+    user_service: UserService = fastapi.Depends(),
 ) -> list[ChatMessageDto]:
-    messages = await message_service.get_messages(chat_id)
+    messages = await message_service.get_chat_messages(chat_id)
+    user_ids = {msg.from_user_id for msg in messages}
+    email_by_ids = await user_service.get_email_by_ids(user_ids)
     return [
         ChatMessageDto(
             message_id=msg.chat_message_id,
-            from_user_id=msg.auth_user_id,
+            from_user_id=msg.from_user_id,
+            from_user=email_by_ids.get(msg.from_user_id, "unknown"),
             entered_at=msg.entered_at,
             content=msg.content or "",
         )
