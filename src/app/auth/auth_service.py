@@ -38,7 +38,7 @@ class AuthService:
         self.logger = logging.getLogger(f"{self.__module__}.{type(self).__name__}")
         self.auth_user_repo = facade.auth_user
         self.jwt_service = jwt_service
-        self.jwt_ttl = 300
+        self.jwt_ttl = 3600
 
     async def create_user(
         self,
