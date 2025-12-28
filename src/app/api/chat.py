@@ -29,7 +29,7 @@ async def get_chats(
     ]
 
 
-@router.post("/")
+@router.post("")
 async def new_chat(
     message_service: MessageService = fastapi.Depends(),
 ) -> uuid.UUID:
