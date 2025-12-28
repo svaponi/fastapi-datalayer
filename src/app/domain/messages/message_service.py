@@ -4,13 +4,14 @@ import logging
 import uuid
 
 import fastapi
+import pydantic
 
 from app.api.dependencies import get_auth_user
 from app.auth.auth_service import AuthUserDto
 from app.core.config import AppConfig, NotificationConfig
 from app.core.dependencies import get_app_config
 from app.datalayer.chat import ChatRecordInsert, ChatRecord
-from app.datalayer.chat_message import ChatMessageRecordInsert, ChatMessageRecord
+from app.datalayer.chat_message import ChatMessageRecordInsert
 from app.datalayer.chat_message_recipient import (
     ChatMessageRecipientRecordInsert,
     ChatMessageRecipientRecordUpdate,
@@ -30,6 +31,15 @@ def get_sub_id(subscription_info: dict) -> uuid.UUID:
     if not endpoint:
         raise ValueError("Invalid subscription_info: missing endpoint")
     return uuid.uuid5(uuid.NAMESPACE_DNS, endpoint)
+
+
+class ChatMessage(pydantic.BaseModel):
+    chat_id: uuid.UUID
+    chat_message_id: uuid.UUID
+    from_user_id: uuid.UUID
+    entered_at: datetime.datetime
+    read_at: datetime.datetime | None
+    content: str
 
 
 class MessageService:
@@ -100,7 +110,7 @@ class MessageService:
         chat_id: uuid.UUID,
         chat_message_id: uuid.UUID,
     ) -> int:
-        read_at = datetime.datetime.now(tz=datetime.UTC)
+        read_at = datetime.datetime.now()
         rowcount = await self.chat_message_recipient_repo.update_many(
             ChatMessageRecipientRecordUpdate(
                 read_at=read_at,
@@ -117,26 +127,44 @@ class MessageService:
         chats = await self.chat_repo.get_all()
         return chats
 
-    async def get_received_chat_messages(
-        self, chat_id: uuid.UUID
-    ) -> list[ChatMessageRecord]:
+    async def get_received_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessage]:
         chat_message_recs = await self.chat_message_recipient_repo.get_all(
             filters={"chat_id": chat_id, "to_user_id": self.auth_user.user_id}
         )
+        rec_by_id = {cmr.chat_message_id: cmr for cmr in chat_message_recs}
         chat_message_ids = set(cmr.chat_message_id for cmr in chat_message_recs)
         received_chat_messages = await self.chat_message_repo.get_by_ids(
             chat_message_ids
         )
-        return list(received_chat_messages.values())
+        return [
+            ChatMessage(
+                chat_id=m.chat_id,
+                chat_message_id=m.chat_message_id,
+                from_user_id=m.from_user_id,
+                entered_at=m.entered_at,
+                read_at=rec_by_id.get(m.chat_message_id).read_at,
+                content=m.content or "",
+            )
+            for m in received_chat_messages.values()
+        ]
 
-    async def get_sent_chat_messages(
-        self, chat_id: uuid.UUID
-    ) -> list[ChatMessageRecord]:
-        return await self.chat_message_repo.get_all(
+    async def get_sent_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessage]:
+        messages = await self.chat_message_repo.get_all(
             filters={"chat_id": chat_id, "from_user_id": self.auth_user.user_id}
         )
+        return [
+            ChatMessage(
+                chat_id=m.chat_id,
+                chat_message_id=m.chat_message_id,
+                from_user_id=m.from_user_id,
+                entered_at=m.entered_at,
+                read_at=None,
+                content=m.content or "",
+            )
+            for m in messages
+        ]
 
-    async def get_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessageRecord]:
+    async def get_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessage]:
         received, sent = await asyncio.gather(
             self.get_received_chat_messages(chat_id),
             self.get_sent_chat_messages(chat_id),

@@ -50,10 +50,12 @@ async def new_message(
 
 
 class ChatMessageDto(pydantic.BaseModel):
-    message_id: uuid.UUID
+    chat_id: uuid.UUID
+    chat_message_id: uuid.UUID
     from_user_id: uuid.UUID
-    from_user: str
+    from_user_display_name: str
     entered_at: datetime.datetime
+    read_at: datetime.datetime | None
     content: str
 
 
@@ -68,11 +70,13 @@ async def get_messages(
     email_by_ids = await user_service.get_email_by_ids(user_ids)
     return [
         ChatMessageDto(
-            message_id=msg.chat_message_id,
+            chat_id=msg.chat_id,
+            chat_message_id=msg.chat_message_id,
             from_user_id=msg.from_user_id,
-            from_user=email_by_ids.get(msg.from_user_id, "unknown"),
+            from_user_display_name=email_by_ids.get(msg.from_user_id, "unknown"),
             entered_at=msg.entered_at,
-            content=msg.content or "",
+            read_at=msg.read_at,
+            content=msg.content,
         )
         for msg in messages
     ]
