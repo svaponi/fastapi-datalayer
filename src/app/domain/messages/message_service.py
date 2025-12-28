@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 
@@ -64,6 +65,7 @@ class MessageService:
         chat = await self.chat_repo.get_or_none_by_id(chat_id)
         if not chat:
             raise ValueError("chat not found")
+        to_user_ids = set(chat.auth_user_ids) - {self.auth_user.user_id}
         async with self.chat_message_repo.get_session() as session:
             chat_message_id = await self.chat_message_repo.insert(
                 ChatMessageRecordInsert(
@@ -73,7 +75,7 @@ class MessageService:
                 ),
                 reuse_session=session,
             )
-            for to_user_id in chat.auth_user_ids:
+            for to_user_id in to_user_ids:
                 await self.chat_message_recipient_repo.insert(
                     ChatMessageRecipientRecordInsert(
                         chat_id=chat_id,
@@ -86,17 +88,35 @@ class MessageService:
             "title": "New message",
             "url": f"/chat/{chat_id}?chat_message_id={chat_message_id}",
         }
-        await self.notification_service.send(payload)
+        await self.notification_service.send(payload, to_user_ids=to_user_ids)
         return chat_message_id
 
     async def get_chats(self) -> list[ChatRecord]:
         chats = await self.chat_repo.get_all()
         return chats
 
-    async def get_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessageRecord]:
+    async def get_received_chat_messages(
+        self, chat_id: uuid.UUID
+    ) -> list[ChatMessageRecord]:
         chat_message_recs = await self.chat_message_recipient_repo.get_all(
             filters={"chat_id": chat_id, "to_user_id": self.auth_user.user_id}
         )
         chat_message_ids = set(cmr.chat_message_id for cmr in chat_message_recs)
-        chat_messages = await self.chat_message_repo.get_by_ids(chat_message_ids)
-        return list(chat_messages.values())
+        received_chat_messages = await self.chat_message_repo.get_by_ids(
+            chat_message_ids
+        )
+        return list(received_chat_messages.values())
+
+    async def get_sent_chat_messages(
+        self, chat_id: uuid.UUID
+    ) -> list[ChatMessageRecord]:
+        return await self.chat_message_repo.get_all(
+            filters={"chat_id": chat_id, "from_user_id": self.auth_user.user_id}
+        )
+
+    async def get_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessageRecord]:
+        received, sent = await asyncio.gather(
+            self.get_received_chat_messages(chat_id),
+            self.get_sent_chat_messages(chat_id),
+        )
+        return received + sent

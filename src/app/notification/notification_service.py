@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+from typing import Iterable
 
 import fastapi
 import pywebpush
@@ -99,7 +100,7 @@ class NotificationService:
                 if e.response.status_code == 410:
                     await self.unsubscribe(subscription_info)
 
-    async def send(self, payload: dict, auth_user_ids: list[uuid.UUID] | None = None):
+    async def send(self, payload: dict, to_user_ids: Iterable[uuid.UUID] | None = None):
         if not self.vapid_private_key:
             raise RuntimeError(
                 "VAPID keys not configured, cannot send push notifications"
@@ -107,7 +108,7 @@ class NotificationService:
 
         data = json.dumps(payload)
         subscriptions = await self.user_device_repo.get_all(
-            filters={"auth_user_id": auth_user_ids}
+            filters={"auth_user_id": to_user_ids}
         )
         for sub in subscriptions:
             if not sub.subscription_info:
