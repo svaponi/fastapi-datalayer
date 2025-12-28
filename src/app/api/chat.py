@@ -76,3 +76,12 @@ async def get_messages(
         )
         for msg in messages
     ]
+
+
+@router.put("/{chat_id}/messages/{chat_message_id}/read", status_code=204)
+async def set_message_read(
+    chat_id: uuid.UUID,
+    chat_message_id: uuid.UUID,
+    message_service: MessageService = fastapi.Depends(),
+):
+    await message_service.set_message_read(chat_id, chat_message_id)

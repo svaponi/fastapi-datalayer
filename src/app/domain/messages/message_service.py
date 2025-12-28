@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 import uuid
 
@@ -10,7 +11,10 @@ from app.core.config import AppConfig, NotificationConfig
 from app.core.dependencies import get_app_config
 from app.datalayer.chat import ChatRecordInsert, ChatRecord
 from app.datalayer.chat_message import ChatMessageRecordInsert, ChatMessageRecord
-from app.datalayer.chat_message_recipient import ChatMessageRecipientRecordInsert
+from app.datalayer.chat_message_recipient import (
+    ChatMessageRecipientRecordInsert,
+    ChatMessageRecipientRecordUpdate,
+)
 from app.datalayer.facade import DatalayerFacade
 from app.notification.notification_service import NotificationService
 
@@ -90,6 +94,24 @@ class MessageService:
         }
         await self.notification_service.send(payload, to_user_ids=to_user_ids)
         return chat_message_id
+
+    async def set_message_read(
+        self,
+        chat_id: uuid.UUID,
+        chat_message_id: uuid.UUID,
+    ) -> int:
+        read_at = datetime.datetime.now(tz=datetime.UTC)
+        rowcount = await self.chat_message_recipient_repo.update_many(
+            ChatMessageRecipientRecordUpdate(
+                read_at=read_at,
+            ),
+            filters={
+                "chat_id": chat_id,
+                "chat_message_id": chat_message_id,
+                "to_user_id": self.auth_user.user_id,
+            },
+        )
+        return rowcount
 
     async def get_chats(self) -> list[ChatRecord]:
         chats = await self.chat_repo.get_all()
