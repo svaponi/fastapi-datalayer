@@ -18,11 +18,11 @@ class _ChatTable(Base):
         primary_key=True,
         server_default=sqlalchemy.text("uuid_generate_v4()"),
     )
-    auth_user_ids: sqlalchemy.orm.Mapped[list[uuid.UUID]] = (
-        sqlalchemy.orm.mapped_column(
-            sqlalchemy.ARRAY(sqlalchemy.Uuid),
-            server_default=sqlalchemy.text("ARRAY[]::uuid[]"),
-        )
+    chat_title: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.String
+    )
+    user_ids: sqlalchemy.orm.Mapped[list[uuid.UUID] | None] = (
+        sqlalchemy.orm.mapped_column(sqlalchemy.ARRAY(sqlalchemy.Uuid))
     )
 
 
@@ -32,12 +32,14 @@ ChatRecord = _ChatTable
 class ChatRecordInsert(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
     chat_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
-    auth_user_ids: list[uuid.UUID] = pydantic.Field(default_factory=list)
+    chat_title: str | None = None
+    user_ids: list[uuid.UUID] | None = None
 
 
 class ChatRecordUpdate(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
-    auth_user_ids: list[uuid.UUID] | None = None
+    chat_title: str | None = None
+    user_ids: list[uuid.UUID] | None = None
 
 
 class ChatRepository(BaseRepository[ChatRecord]):

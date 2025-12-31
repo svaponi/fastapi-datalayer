@@ -3,28 +3,25 @@ import logging
 
 from asyncpg_datalayer.db import DB
 
-from app.auth.utils import hash_password
-from app.datalayer.auth_user import AuthUserRepository, AuthUserRecordInsert
+from app.auth.user_service import UserService
+from app.datalayer.facade import DatalayerFacade
 
 logger = logging.getLogger(__name__)
 
 
 async def create_defaults(db: DB):
-    auth_user_repo = AuthUserRepository(db)
+    facade = DatalayerFacade(db)
+    user_service = UserService(facade)
 
     # TODO change with select distinct emails
-    users = await auth_user_repo.get_all()
-    user_by_email = {user.email: user for user in users}
+    emails = await user_service.get_distinct_emails()
 
     async def create_user_if_missing(email: str, full_name: str | None = None):
-        user = user_by_email.get(email)
-        if not user:
-            await auth_user_repo.insert(
-                AuthUserRecordInsert(
-                    email=email,
-                    hashed_password=hash_password("secret"),
-                    full_name=full_name,
-                )
+        if email not in emails:
+            await user_service.create_user(
+                email=email,
+                password="secret",
+                full_name=full_name,
             )
 
     await asyncio.gather(

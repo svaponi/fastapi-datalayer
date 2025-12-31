@@ -8,12 +8,12 @@ from asyncpg_datalayer.base_table import Base
 from asyncpg_datalayer.db import DB
 
 
-class _AuthUserTable(Base):
-    __tablename__ = "auth_user"
+class _UserAccountTable(Base):
+    __tablename__ = "user_account"
     __table_args__ = (
-        sqlalchemy.PrimaryKeyConstraint("auth_user_id", name="auth_user_pkey"),
+        sqlalchemy.PrimaryKeyConstraint("user_id", name="user_account_pkey"),
     )
-    auth_user_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
+    user_id: sqlalchemy.orm.Mapped[uuid.UUID] = sqlalchemy.orm.mapped_column(
         sqlalchemy.Uuid,
         primary_key=True,
         server_default=sqlalchemy.text("uuid_generate_v4()"),
@@ -30,19 +30,19 @@ class _AuthUserTable(Base):
     )
 
 
-AuthUserRecord = _AuthUserTable
+UserAccountRecord = _UserAccountTable
 
 
-class AuthUserRecordInsert(pydantic.BaseModel):
+class UserAccountRecordInsert(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
-    auth_user_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     email: str
     email_verified: bool = False
     hashed_password: str | None = None
     full_name: str | None = None
 
 
-class AuthUserRecordUpdate(pydantic.BaseModel):
+class UserAccountRecordUpdate(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
     email: str | None = None
     email_verified: bool | None = None
@@ -50,9 +50,9 @@ class AuthUserRecordUpdate(pydantic.BaseModel):
     full_name: str | None = None
 
 
-class AuthUserRepository(BaseRepository[AuthUserRecord]):
+class UserAccountRepository(BaseRepository[UserAccountRecord]):
     def __init__(self, db: DB) -> None:
-        super().__init__(db, AuthUserRecord)
+        super().__init__(db, UserAccountRecord)
 
     ### custom methods go below ###
 
@@ -60,12 +60,23 @@ class AuthUserRepository(BaseRepository[AuthUserRecord]):
         self,
         email: str,
         filters: dict | None = None,
-    ) -> AuthUserRecord | None:
-        query = sqlalchemy.select(_AuthUserTable).where(
-            _AuthUserTable.email == email,
+    ) -> UserAccountRecord | None:
+        query = sqlalchemy.select(_UserAccountTable).where(
+            _UserAccountTable.email == email,
         )
         query = self._with_filters(query, filters)
         async with self.db.get_session(readonly=True) as session:
             response = await session.execute(query)
             result = response.scalar_one_or_none()
         return result
+
+    async def get_distinct_emails(
+        self,
+        filters: dict | None = None,
+    ) -> list[str]:
+        query = sqlalchemy.select(sqlalchemy.distinct(_UserAccountTable.email))
+        query = self._with_filters(query, filters)
+        async with self.db.get_session(readonly=True) as session:
+            response = await session.execute(query)
+            results = response.scalars().all()
+        return results

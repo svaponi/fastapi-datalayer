@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_signup_login_and_whoami(aclient):
-    payload = dict(email="test@example.com", password="secret")
+    payload = dict(email="test@example.com", password="secret", user_type="tenant")
     res = await aclient.post("/api/auth/signup", json=payload)
     print(f"{res.request.method} {res.url} >> {res.status_code} {res.text}")
     assert res.is_success

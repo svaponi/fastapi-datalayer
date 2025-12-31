@@ -4,8 +4,8 @@ import uuid
 import fastapi
 import pydantic
 
+from app.auth.user_service import UserService
 from app.domain.messages.message_service import MessageService
-from app.domain.user.user_service import UserService
 
 router = fastapi.APIRouter()
 

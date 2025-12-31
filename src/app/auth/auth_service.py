@@ -6,37 +6,33 @@ import fastapi
 import pydantic
 
 from app.auth.jwt_service import JwtService
-from app.auth.utils import hash_password, verify_hashed_password
+from app.auth.user_auth_service import UserAuthService, UserType, UserAuthDto
+from app.auth.user_service import UserService, UserDto
 from app.core.errors import UnauthorizedException
-from app.datalayer.auth_user import (
-    AuthUserRecordInsert,
-    AuthUserRecord,
-)
 from app.datalayer.facade import DatalayerFacade
 
+_logger = logging.getLogger(__name__)
 
-class AccessTokenDto(pydantic.BaseModel):
-    user_id: uuid.UUID
+
+class AuthDto(pydantic.BaseModel):
+    user: UserDto
+    auths: list[UserAuthDto]
     expires_at: datetime.datetime
     access_token: str
-
-
-class AuthUserDto(pydantic.BaseModel):
-    user_id: uuid.UUID
-    email: str
-    email_verified: bool = False
-    full_name: str | None = None
 
 
 class AuthService:
     def __init__(
         self,
         facade: DatalayerFacade = fastapi.Depends(),
+        user_service: UserService = fastapi.Depends(),
+        user_auth_service: UserAuthService = fastapi.Depends(),
         jwt_service: JwtService = fastapi.Depends(),
     ) -> None:
         super().__init__()
-        self.logger = logging.getLogger(f"{self.__module__}.{type(self).__name__}")
-        self.auth_user_repo = facade.auth_user
+        self.facade = facade
+        self.user_service = user_service
+        self.user_auth_service = user_auth_service
         self.jwt_service = jwt_service
         self.jwt_ttl = 3600
 
@@ -44,75 +40,70 @@ class AuthService:
         self,
         email: str,
         password: str,
+        user_type: UserType,
         full_name: str | None = None,
     ) -> uuid.UUID:
-        auth_user_id = await self.auth_user_repo.insert(
-            AuthUserRecordInsert(
+        async with self.facade.db.get_session() as session:
+            user_id = await self.user_service.create_user(
                 email=email,
-                hashed_password=hash_password(password),
+                password=password,
                 full_name=full_name,
+                reuse_session=session,
             )
-        )
-        return auth_user_id
-
-    async def _get_user_by_credentials(
-        self,
-        email: str,
-        password: str,
-    ) -> AuthUserRecord | None:
-        auth_user = await self.auth_user_repo.find_by_email(
-            email=email,
-        )
-        if not auth_user:
-            return None
-        hashed_password = auth_user.hashed_password
-        if not hashed_password:
-            return None
-        ok = verify_hashed_password(password, hashed_password)
-        if not ok:
-            return None
-        return auth_user
+            await self.user_auth_service.add_user_auth(
+                user_id=user_id,
+                user_type=user_type,
+                reuse_session=session,
+            )
+        return user_id
 
     async def get_user_by_token(
         self,
         token: str,
-    ) -> tuple[AuthUserDto, datetime.datetime]:
+    ) -> AuthDto:
         try:
             verified = self.jwt_service.validate_token(token)
-            auth_user_id = uuid.UUID(hex=verified["sub"])
+            user_id = uuid.UUID(hex=verified["sub"])
             expires_at = datetime.datetime.fromtimestamp(
                 verified["exp"], tz=datetime.UTC
             )
         except Exception as e:
             raise UnauthorizedException() from e
-        auth_user = await self.auth_user_repo.get_or_none_by_id(auth_user_id)
-        if not auth_user:
+        user = await self.user_service.get_or_none_by_id(user_id)
+        if not user:
             raise UnauthorizedException()
-        dto = AuthUserDto(
-            user_id=auth_user.auth_user_id,
-            email_verified=auth_user.email_verified,
-            email=auth_user.email,
-            full_name=auth_user.full_name,
+        auths = await self.user_auth_service.get_user_auths_by_user_id(
+            user_id=user_id,
         )
-        return dto, expires_at
+        dto = AuthDto(
+            user=user,
+            auths=auths,
+            expires_at=expires_at,
+            access_token=token,
+        )
+        return dto
 
     async def login_by_credentials(
         self,
         email: str,
         password: str,
-    ) -> AccessTokenDto:
-        auth_user = await self._get_user_by_credentials(
+    ) -> AuthDto:
+        user = await self.user_service.get_user_by_credentials(
             email=email,
             password=password,
         )
-        if not auth_user:
+        if not user:
             raise UnauthorizedException()
         access_token, expires_at = self.jwt_service.create_token(
-            content=dict(sub=auth_user.auth_user_id.hex),
+            content=dict(sub=user.user_id.hex),
             expires_in=self.jwt_ttl,
         )
-        return AccessTokenDto(
-            user_id=auth_user.auth_user_id,
+        auths = await self.user_auth_service.get_user_auths_by_user_id(
+            user_id=user.user_id,
+        )
+        return AuthDto(
+            user=user,
+            auths=auths,
             expires_at=expires_at,
             access_token=access_token,
         )

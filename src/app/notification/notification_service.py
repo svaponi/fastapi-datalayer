@@ -7,8 +7,8 @@ import fastapi
 import pywebpush
 from asyncpg_datalayer.errors import ConstraintViolationException
 
-from app.api.dependencies import get_auth_user
-from app.auth.auth_service import AuthUserDto
+from app.api.dependencies import get_auth
+from app.auth.auth_service import AuthDto
 from app.core.config import AppConfig, NotificationConfig
 from app.core.dependencies import get_app_config
 from app.datalayer.facade import DatalayerFacade
@@ -34,13 +34,13 @@ class NotificationService:
 
     def __init__(
         self,
-        auth_user: AuthUserDto = fastapi.Depends(get_auth_user),
+        auth: AuthDto = fastapi.Depends(get_auth),
         facade: DatalayerFacade = fastapi.Depends(),
         notification_config: NotificationConfig = fastapi.Depends(
             get_notification_config
         ),
     ) -> None:
-        self.auth_user = auth_user
+        self.auth = auth
         self.user_device_repo = facade.user_device
         self.vapid_private_key = notification_config.VAPID_PRIVATE_KEY
         self.logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class NotificationService:
             await self.user_device_repo.insert(
                 UserDeviceRecordInsert(
                     user_device_id=sub_id,
-                    auth_user_id=self.auth_user.user_id,
+                    user_id=self.auth.user_id,
                     subscription_info=json.dumps(subscription_info),
                 )
             )
@@ -77,7 +77,7 @@ class NotificationService:
 
         payload = {
             "title": "Hello!",
-            "body": f"Greeting from {self.auth_user.email}",
+            "body": f"Greeting from {self.auth.email}",
             "url": "/",
         }
 

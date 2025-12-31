@@ -1,7 +1,9 @@
 import pytest
 
-from app.auth.auth_service import AuthService
+from app.auth.auth_service import AuthService, UserType
 from app.auth.jwt_service import JwtService
+from app.auth.user_auth_service import UserAuthService
+from app.auth.user_service import UserService
 
 
 @pytest.fixture
@@ -9,31 +11,35 @@ def jwt_service():
     return JwtService("secret-key")
 
 
-@pytest.fixture
-def auth_service(facade, jwt_service):
-    return AuthService(facade=facade, jwt_service=jwt_service)
-
-
 @pytest.mark.asyncio
-async def test_create_user_and_login(auth_service, jwt_service):
-    auth_user_id = await auth_service.create_user(
+async def test_create_user_and_login(facade, jwt_service):
+    user_service = UserService(facade)
+    user_auth_service = UserAuthService(facade)
+    auth_service = AuthService(
+        facade=facade,
+        user_service=user_service,
+        user_auth_service=user_auth_service,
+        jwt_service=jwt_service,
+    )
+    user_id = await auth_service.create_user(
         email="sam@example.com",
         password="secret",
+        user_type=UserType.tenant,
     )
-    auth_user = await auth_service._get_user_by_credentials(
+    user = await user_service.get_user_by_credentials(
         email="sam@example.com",
         password="wrong password",
     )
-    assert auth_user is None
-    auth_user = await auth_service._get_user_by_credentials(
+    assert user is None
+    user = await user_service.get_user_by_credentials(
         email="sam@example.com",
         password="secret",
     )
-    assert auth_user.auth_user_id == auth_user_id
-    dto = await auth_service.login_by_credentials(
+    assert user.user_id == user_id
+    auth = await auth_service.login_by_credentials(
         email="sam@example.com",
         password="secret",
     )
-    assert dto.user_id == auth_user_id
-    decoded = jwt_service.validate_token(dto.access_token)
-    assert decoded["sub"] == auth_user_id.hex
+    assert auth.user.user_id == user_id
+    decoded = jwt_service.validate_token(auth.access_token)
+    assert decoded["sub"] == user_id.hex
