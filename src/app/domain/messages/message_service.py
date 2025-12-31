@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 import uuid
@@ -60,9 +59,7 @@ class MessageService:
         user_ids: list[uuid.UUID] | None = None,
     ) -> uuid.UUID:
         if not user_ids:
-            user_ids = [
-                au.auth_user_id for au in await self.facade.user_account.get_all()
-            ]
+            user_ids = [au.user_id for au in await self.facade.user_account.get_all()]
         chat_id = await self.facade.chat.insert(ChatRecordInsert(user_ids=user_ids))
         return chat_id
 
@@ -75,12 +72,12 @@ class MessageService:
         chat = await self.facade.chat.get_or_none_by_id(chat_id)
         if not chat:
             raise ValueError("chat not found")
-        to_user_ids = set(chat.auth_user_ids) - {self.auth.user_id}
+        to_user_ids = set(chat.user_ids) - {self.auth.user.user_id}
         async with self.facade.chat_message_to_user.get_session() as session:
             chat_message_id = await self.facade.chat_message.insert(
                 ChatMessageRecordInsert(
                     chat_id=chat_id,
-                    from_user_id=self.auth.user_id,
+                    from_user_id=self.auth.user.user_id,
                     content=content,
                 ),
                 reuse_session=session,
@@ -115,9 +112,8 @@ class MessageService:
                 read_at=read_at,
             ),
             filters={
-                "chat_id": chat_id,
                 "chat_message_id": chat_message_id,
-                "to_user_id": self.auth.user_id,
+                "to_user_id": self.auth.user.user_id,
             },
         )
         return rowcount
@@ -126,46 +122,48 @@ class MessageService:
         chats = await self.facade.chat.get_all()
         return chats
 
-    async def get_received_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessage]:
-        chat_message_to_users = await self.facade.chat_message_to_user.get_all(
-            filters={"chat_id": chat_id, "to_user_id": self.auth.user_id}
-        )
-        by_chat_message_id = {cmr.chat_message_id: cmr for cmr in chat_message_to_users}
-        chat_message_ids = set(cmr.chat_message_id for cmr in chat_message_to_users)
-        received_chat_messages = await self.facade.chat_message_to_user.get_by_ids(
-            chat_message_ids
-        )
-        return [
-            ChatMessage(
-                chat_id=m.chat_id,
-                chat_message_id=m.chat_message_id,
-                from_user_id=m.from_user_id,
-                entered_at=m.entered_at,
-                read_at=by_chat_message_id.get(m.chat_message_id).read_at,
-                content=m.content or "",
-            )
-            for m in received_chat_messages.values()
-        ]
-
-    async def get_sent_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessage]:
-        messages = await self.facade.chat_message.get_all(
-            filters={"chat_id": chat_id, "from_user_id": self.auth.user_id}
-        )
-        return [
-            ChatMessage(
-                chat_id=m.chat_id,
-                chat_message_id=m.chat_message_id,
-                from_user_id=m.from_user_id,
-                entered_at=m.entered_at,
-                read_at=None,
-                content=m.content or "",
-            )
-            for m in messages
-        ]
-
     async def get_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessage]:
-        received, sent = await asyncio.gather(
-            self.get_received_chat_messages(chat_id),
-            self.get_sent_chat_messages(chat_id),
+        messages = await self.facade.chat_message.get_all(filters={"chat_id": chat_id})
+        sent_messages = [
+            m for m in messages if m.from_user_id == self.auth.user.user_id
+        ]
+        received_messages = [
+            m for m in messages if m.from_user_id != self.auth.user.user_id
+        ]
+        received_message_ids = {m.chat_message_id for m in received_messages}
+        received_message_by_id = {m.chat_message_id: m for m in received_messages}
+        chat_message_to_users = await self.facade.chat_message_to_user.get_all(
+            filters={
+                "chat_message_id": received_message_ids,
+                "to_user_id": self.auth.user.user_id,
+            }
         )
+
+        def get_received():
+            for m in chat_message_to_users:
+                msg = received_message_by_id.get(m.chat_message_id)
+                if not msg:
+                    continue
+                yield ChatMessage(
+                    chat_id=msg.chat_id,
+                    chat_message_id=msg.chat_message_id,
+                    from_user_id=msg.from_user_id,
+                    entered_at=msg.entered_at,
+                    read_at=m.read_at,
+                    content=msg.content,
+                )
+
+        def get_sent():
+            for m in sent_messages:
+                yield ChatMessage(
+                    chat_id=m.chat_id,
+                    chat_message_id=m.chat_message_id,
+                    from_user_id=m.from_user_id,
+                    entered_at=m.entered_at,
+                    read_at=None,
+                    content=m.content or "",
+                )
+
+        received = list(get_received())
+        sent = list(get_sent())
         return received + sent

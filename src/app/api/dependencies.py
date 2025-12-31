@@ -8,7 +8,7 @@ from app.auth.auth_service import AuthService, AuthDto
 from app.core.errors import UnauthorizedException
 
 security = HTTPBearer(
-    description="Access token including `bearer` prefix",
+    description="Access token",
     auto_error=False,
 )
 
@@ -35,7 +35,9 @@ async def get_auth(
     auth_service: AuthService = fastapi.Depends(),
     credentials: HTTPAuthorizationCredentials = fastapi.Depends(security),
 ) -> AuthDto:
-    token = credentials.credentials
+    token = None
+    if credentials:
+        token = credentials.credentials
     if not token:
         authorization = request.headers.get("authorization")
         if authorization and re.match(r"^bearer ", authorization, re.IGNORECASE):

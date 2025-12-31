@@ -79,14 +79,14 @@ class UserService:
             full_name=user.full_name,
         )
 
-    async def get_distinct_emails(
-        self,
-    ) -> list[str]:
-        return await self.facade.user_account.get_distinct_emails()
-
-    async def get_email_by_ids(
+    async def get_display_name_by_ids(
         self,
         user_ids: typing.Iterable[uuid.UUID],
     ) -> dict[uuid.UUID, str]:
         by_id = await self.facade.user_account.get_by_ids(set(user_ids))
-        return {e.auth_user_id: e.email for e in by_id.values()}
+        return {user.user_id: user.full_name or user.email for user in by_id.values()}
+
+    async def get_distinct_emails(
+        self,
+    ) -> list[str]:
+        return await self.facade.user_account.get_distinct_emails()

@@ -60,7 +60,7 @@ class NotificationService:
             await self.user_device_repo.insert(
                 UserDeviceRecordInsert(
                     user_device_id=sub_id,
-                    user_id=self.auth.user_id,
+                    user_id=self.auth.user.user_id,
                     subscription_info=json.dumps(subscription_info),
                 )
             )

@@ -12,6 +12,7 @@ router = fastapi.APIRouter()
 
 class ChatDto(pydantic.BaseModel):
     chat_id: uuid.UUID
+    chat_title: str
     user_ids: list[uuid.UUID]
 
 
@@ -23,7 +24,8 @@ async def get_chats(
     return [
         ChatDto(
             chat_id=msg.chat_id,
-            user_ids=msg.auth_user_ids,
+            chat_title=msg.chat_title or msg.chat_id.hex[:8],
+            user_ids=msg.user_ids,
         )
         for msg in messages
     ]
@@ -67,13 +69,13 @@ async def get_messages(
 ) -> list[ChatMessageDto]:
     messages = await message_service.get_chat_messages(chat_id)
     user_ids = {msg.from_user_id for msg in messages}
-    email_by_ids = await user_service.get_email_by_ids(user_ids)
+    display_name_by_ids = await user_service.get_display_name_by_ids(user_ids)
     return [
         ChatMessageDto(
             chat_id=msg.chat_id,
             chat_message_id=msg.chat_message_id,
             from_user_id=msg.from_user_id,
-            from_user_display_name=email_by_ids.get(msg.from_user_id, "unknown"),
+            from_user_display_name=display_name_by_ids.get(msg.from_user_id, "unknown"),
             entered_at=msg.entered_at,
             read_at=msg.read_at,
             content=msg.content,
