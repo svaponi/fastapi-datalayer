@@ -7,35 +7,13 @@ import pydantic
 
 from app.api.dependencies import get_auth
 from app.auth.auth_service import AuthDto
-from app.core.config import AppConfig, NotificationConfig
-from app.core.dependencies import get_app_config
-from app.datalayer.chat import ChatRecordInsert
-from app.datalayer.chat_message import ChatMessageRecordInsert
+from app.datalayer.chat_message import ChatMessageRecordInsert, ChatMessageRecord
 from app.datalayer.chat_message_to_user import (
     ChatMessageToUserRecordInsert,
     ChatMessageToUserRecordUpdate,
 )
 from app.datalayer.facade import DatalayerFacade
 from app.notification.notification_service import NotificationService
-
-
-def get_notification_config(
-    config: AppConfig = fastapi.Depends(get_app_config),
-) -> NotificationConfig:
-    return config.notification
-
-
-def get_sub_id(subscription_info: dict) -> uuid.UUID:
-    endpoint = subscription_info.get("endpoint")
-    if not endpoint:
-        raise ValueError("Invalid subscription_info: missing endpoint")
-    return uuid.uuid5(uuid.NAMESPACE_DNS, endpoint)
-
-
-class Chat(pydantic.BaseModel):
-    chat_id: uuid.UUID
-    chat_title: str
-    user_ids: list[uuid.UUID]
 
 
 class ChatMessage(pydantic.BaseModel):
@@ -47,7 +25,7 @@ class ChatMessage(pydantic.BaseModel):
     content: str
 
 
-class MessageService:
+class ChatMessageService:
 
     def __init__(
         self,
@@ -56,18 +34,9 @@ class MessageService:
         notification_service: NotificationService = fastapi.Depends(),
     ) -> None:
         self.logger = logging.getLogger(__name__)
-        self.auth = auth
+        self.user_id = auth.user.user_id
         self.facade = facade
         self.notification_service = notification_service
-
-    async def create_chat(
-        self,
-        user_ids: list[uuid.UUID] | None = None,
-    ) -> uuid.UUID:
-        if not user_ids:
-            user_ids = [au.user_id for au in await self.facade.user_account.get_all()]
-        chat_id = await self.facade.chat.insert(ChatRecordInsert(user_ids=user_ids))
-        return chat_id
 
     async def create_message(
         self,
@@ -78,12 +47,12 @@ class MessageService:
         chat = await self.facade.chat.get_or_none_by_id(chat_id)
         if not chat:
             raise ValueError("chat not found")
-        to_user_ids = set(chat.user_ids) - {self.auth.user.user_id}
+        to_user_ids = set(chat.user_ids) - {self.user_id}
         async with self.facade.chat_message_to_user.get_session() as session:
             chat_message_id = await self.facade.chat_message.insert(
                 ChatMessageRecordInsert(
                     chat_id=chat_id,
-                    from_user_id=self.auth.user.user_id,
+                    from_user_id=self.user_id,
                     content=content,
                 ),
                 reuse_session=session,
@@ -119,85 +88,49 @@ class MessageService:
             ),
             filters={
                 "chat_message_id": chat_message_id,
-                "to_user_id": self.auth.user.user_id,
+                "to_user_id": self.user_id,
             },
         )
         return rowcount
 
-    async def get_chats(self) -> list[Chat]:
-        chats = await self.facade.chat.get_all()
-        return [
-            Chat(
-                chat_id=c.chat_id,
-                chat_title=c.chat_title or c.chat_id.hex[:8],
-                user_ids=c.user_ids,
-            )
-            for c in chats
-        ]
-
-    async def get_chat(self, chat_id: uuid.UUID) -> Chat | None:
-        c = await self.facade.chat.get_or_none_by_id(chat_id)
-        return (
-            Chat(
-                chat_id=c.chat_id,
-                chat_title=c.chat_title or c.chat_id.hex[:8],
-                user_ids=c.user_ids,
-            )
-            if c
-            else None
-        )
-
     async def get_chat_message(
         self, chat_id: uuid.UUID, chat_message_id: uuid.UUID
     ) -> ChatMessage | None:
-        message = await self.facade.chat_message.get_or_none_by_id(chat_message_id)
+        record = await self.facade.chat_message.get_or_none_by_id(chat_message_id)
 
-        if not message:
+        if not record:
             return None
+        return await self.enhance_one(record)
 
-        if message.from_user_id == self.auth.user.user_id:
-            return ChatMessage(
-                chat_id=message.chat_id,
-                chat_message_id=message.chat_message_id,
-                from_user_id=message.from_user_id,
-                entered_at=message.entered_at,
-                read_at=None,
-                content=message.content or "",
-            )
-
-        chat_message_to_user = await self.facade.chat_message_to_user.get_all(
-            filters={
-                "chat_message_id": chat_message_id,
-                "to_user_id": self.auth.user.user_id,
-            }
+    async def get_latest_chat_messages(
+        self,
+        chat_id: uuid.UUID,
+        size: int | None = None,
+        cursor: str | None = None,
+    ) -> tuple[list[ChatMessage], str]:
+        records, _, cursor = await self.facade.chat_message.scroll(
+            sort_by="entered_at:desc",
+            size=size or 10,
+            cursor=cursor,
+            skip_count=True,
+            filters={"chat_id": chat_id},
         )
-        # chat_message_to_user should have size 1
-        read_at = None
-        if chat_message_to_user:
-            read_at = chat_message_to_user[0].read_at
-        return ChatMessage(
-            chat_id=message.chat_id,
-            chat_message_id=message.chat_message_id,
-            from_user_id=message.from_user_id,
-            entered_at=message.entered_at,
-            read_at=read_at,
-            content=message.content,
-        )
+        messages = await self.enhance_all(records)
+        latest = sorted(messages, key=lambda m: m.entered_at, reverse=True)
+        return latest, cursor
 
-    async def get_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessage]:
-        messages = await self.facade.chat_message.get_all(filters={"chat_id": chat_id})
-        sent_messages = [
-            m for m in messages if m.from_user_id == self.auth.user.user_id
-        ]
-        received_messages = [
-            m for m in messages if m.from_user_id != self.auth.user.user_id
-        ]
+    async def enhance_one(self, record: ChatMessageRecord) -> ChatMessage:
+        return (await self.enhance_all([record]))[0]
+
+    async def enhance_all(self, records: list[ChatMessageRecord]) -> list[ChatMessage]:
+        sent_messages = [m for m in records if m.from_user_id == self.user_id]
+        received_messages = [m for m in records if m.from_user_id != self.user_id]
         received_message_ids = {m.chat_message_id for m in received_messages}
         received_message_by_id = {m.chat_message_id: m for m in received_messages}
         chat_message_to_users = await self.facade.chat_message_to_user.get_all(
             filters={
                 "chat_message_id": received_message_ids,
-                "to_user_id": self.auth.user.user_id,
+                "to_user_id": self.user_id,
             }
         )
 

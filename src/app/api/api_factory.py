@@ -1,6 +1,6 @@
 import fastapi
 
-from app.api import auth, health, notifications, chat
+from app.api import auth, health, notifications, chats
 
 
 def setup_api(app: fastapi.FastAPI):
@@ -9,4 +9,4 @@ def setup_api(app: fastapi.FastAPI):
     app.include_router(
         notifications.router, prefix="/api/notifications", tags=["notifications"]
     )
-    app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+    app.include_router(chats.router, prefix="/api/chats", tags=["chats"])
