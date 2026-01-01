@@ -31,7 +31,8 @@ async def get_chats(
             chat_title=chat.chat_title,
             latest_message=chat.latest_message,
             message_count=chat.message_count or 0,
-            has_unread=chat.unread_message_count and chat.unread_message_count > 0,
+            has_unread=chat.unread_message_count is not None
+            and chat.unread_message_count > 0,
         )
         for chat in chats
     ]
@@ -57,7 +58,8 @@ async def get_chat(
         chat_title=chat.chat_title,
         latest_message=chat.latest_message,
         message_count=chat.message_count or 0,
-        has_unread=chat.unread_message_count and chat.unread_message_count > 0,
+        has_unread=chat.unread_message_count is not None
+        and chat.unread_message_count > 0,
     )
 
 
