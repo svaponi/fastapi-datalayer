@@ -6,7 +6,7 @@ import fastapi
 import pydantic
 
 from app.api.dependencies import get_auth
-from app.auth.auth_service import AuthDto
+from app.auth.auth_service import Auth
 from app.datalayer.chat_message import ChatMessageRecordInsert, ChatMessageRecord
 from app.datalayer.chat_message_to_user import (
     ChatMessageToUserRecordInsert,
@@ -29,7 +29,7 @@ class ChatMessageService:
 
     def __init__(
         self,
-        auth: AuthDto = fastapi.Depends(get_auth),
+        auth: Auth = fastapi.Depends(get_auth),
         facade: DatalayerFacade = fastapi.Depends(),
         notification_service: NotificationService = fastapi.Depends(),
     ) -> None:

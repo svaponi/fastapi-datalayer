@@ -7,7 +7,7 @@ import fastapi
 import pydantic
 
 from app.api.dependencies import get_auth
-from app.auth.auth_service import AuthDto
+from app.auth.auth_service import Auth
 from app.datalayer.chat import ChatRecordInsert
 from app.datalayer.facade import DatalayerFacade
 
@@ -25,7 +25,7 @@ class ChatService:
 
     def __init__(
         self,
-        auth: AuthDto = fastapi.Depends(get_auth),
+        auth: Auth = fastapi.Depends(get_auth),
         facade: DatalayerFacade = fastapi.Depends(),
     ) -> None:
         self.logger = logging.getLogger(__name__)

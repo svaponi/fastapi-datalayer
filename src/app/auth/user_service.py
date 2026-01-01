@@ -11,7 +11,7 @@ from app.datalayer.facade import DatalayerFacade
 from app.datalayer.user_account import UserAccountRecordInsert
 
 
-class UserDto(pydantic.BaseModel):
+class User(pydantic.BaseModel):
     user_id: uuid.UUID
     email: str
     email_verified: bool = False
@@ -48,7 +48,7 @@ class UserService:
         self,
         email: str,
         password: str,
-    ) -> UserDto | None:
+    ) -> User | None:
         user = await self.facade.user_account.find_by_email(
             email=email,
         )
@@ -60,7 +60,7 @@ class UserService:
         ok = verify_hashed_password(password, hashed_password)
         if not ok:
             return None
-        return UserDto(
+        return User(
             user_id=user.user_id,
             email=user.email,
             full_name=user.full_name,
@@ -69,11 +69,11 @@ class UserService:
     async def get_or_none_by_id(
         self,
         user_id: uuid.UUID,
-    ) -> UserDto | None:
+    ) -> User | None:
         user = await self.facade.user_account.get_or_none_by_id(user_id)
         if not user:
             return None
-        return UserDto(
+        return User(
             user_id=user.user_id,
             email=user.email,
             full_name=user.full_name,

@@ -8,7 +8,7 @@ import pywebpush
 from asyncpg_datalayer.errors import ConstraintViolationException
 
 from app.api.dependencies import get_auth
-from app.auth.auth_service import AuthDto
+from app.auth.auth_service import Auth
 from app.core.config import AppConfig, NotificationConfig
 from app.core.dependencies import get_app_config
 from app.datalayer.facade import DatalayerFacade
@@ -34,7 +34,7 @@ class NotificationService:
 
     def __init__(
         self,
-        auth: AuthDto = fastapi.Depends(get_auth),
+        auth: Auth = fastapi.Depends(get_auth),
         facade: DatalayerFacade = fastapi.Depends(),
         notification_config: NotificationConfig = fastapi.Depends(
             get_notification_config

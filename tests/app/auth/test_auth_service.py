@@ -36,7 +36,7 @@ async def test_create_user_and_login(facade, jwt_service):
         password="secret",
     )
     assert user.user_id == user_id
-    auth = await auth_service.login_by_credentials(
+    auth = await auth_service.get_auth_by_credentials(
         email="sam@example.com",
         password="secret",
     )

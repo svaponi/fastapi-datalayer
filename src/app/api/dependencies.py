@@ -4,7 +4,7 @@ import re
 import fastapi
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.auth.auth_service import AuthService, AuthDto
+from app.auth.auth_service import AuthService, Auth
 from app.core.errors import UnauthorizedException
 
 security = HTTPBearer(
@@ -34,7 +34,7 @@ async def get_auth(
     response: fastapi.Response,
     auth_service: AuthService = fastapi.Depends(),
     credentials: HTTPAuthorizationCredentials = fastapi.Depends(security),
-) -> AuthDto:
+) -> Auth:
     token = None
     if credentials:
         token = credentials.credentials
@@ -45,7 +45,7 @@ async def get_auth(
     if not token:
         token = request.cookies.get("bearer")
     if token:
-        auth = await auth_service.get_user_by_token(token)
+        auth = await auth_service.get_auth_by_token(token)
         if auth:
             set_auth_cookie(
                 response,
