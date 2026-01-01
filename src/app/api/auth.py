@@ -3,6 +3,7 @@ import uuid
 
 import fastapi
 import pydantic
+from fastapi.openapi.models import Example
 
 from app.api.dependencies import get_auth, set_auth_cookie
 from app.auth.auth_service import AuthService, AuthDto
@@ -57,10 +58,15 @@ class LoginResponse(pydantic.BaseModel):
     access_token: str
 
 
+LOGINS = dict(
+    default=Example(value=LoginRequest(email="jdoe@example.com", password="secret"))
+)
+
+
 @router.post("/login")
 async def login(
     response: fastapi.Response,
-    payload: LoginRequest = fastapi.Body(...),
+    payload: LoginRequest = fastapi.Body(..., openapi_examples=LOGINS),
     auth_service: AuthService = fastapi.Depends(),
 ) -> LoginResponse:
     dto: AuthDto = await auth_service.login_by_credentials(
