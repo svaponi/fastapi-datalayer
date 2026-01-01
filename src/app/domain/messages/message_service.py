@@ -9,7 +9,7 @@ from app.api.dependencies import get_auth
 from app.auth.auth_service import AuthDto
 from app.core.config import AppConfig, NotificationConfig
 from app.core.dependencies import get_app_config
-from app.datalayer.chat import ChatRecordInsert, ChatRecord
+from app.datalayer.chat import ChatRecordInsert
 from app.datalayer.chat_message import ChatMessageRecordInsert
 from app.datalayer.chat_message_to_user import (
     ChatMessageToUserRecordInsert,
@@ -30,6 +30,12 @@ def get_sub_id(subscription_info: dict) -> uuid.UUID:
     if not endpoint:
         raise ValueError("Invalid subscription_info: missing endpoint")
     return uuid.uuid5(uuid.NAMESPACE_DNS, endpoint)
+
+
+class Chat(pydantic.BaseModel):
+    chat_id: uuid.UUID
+    chat_title: str
+    user_ids: list[uuid.UUID]
 
 
 class ChatMessage(pydantic.BaseModel):
@@ -118,9 +124,65 @@ class MessageService:
         )
         return rowcount
 
-    async def get_chats(self) -> list[ChatRecord]:
+    async def get_chats(self) -> list[Chat]:
         chats = await self.facade.chat.get_all()
-        return chats
+        return [
+            Chat(
+                chat_id=c.chat_id,
+                chat_title=c.chat_title or c.chat_id.hex[:8],
+                user_ids=c.user_ids,
+            )
+            for c in chats
+        ]
+
+    async def get_chat(self, chat_id: uuid.UUID) -> Chat | None:
+        c = await self.facade.chat.get_or_none_by_id(chat_id)
+        return (
+            Chat(
+                chat_id=c.chat_id,
+                chat_title=c.chat_title or c.chat_id.hex[:8],
+                user_ids=c.user_ids,
+            )
+            if c
+            else None
+        )
+
+    async def get_chat_message(
+        self, chat_id: uuid.UUID, chat_message_id: uuid.UUID
+    ) -> ChatMessage | None:
+        message = await self.facade.chat_message.get_or_none_by_id(chat_message_id)
+
+        if not message:
+            return None
+
+        if message.from_user_id == self.auth.user.user_id:
+            return ChatMessage(
+                chat_id=message.chat_id,
+                chat_message_id=message.chat_message_id,
+                from_user_id=message.from_user_id,
+                entered_at=message.entered_at,
+                read_at=None,
+                content=message.content or "",
+            )
+
+        chat_message_to_user = await self.facade.chat_message_to_user.get_all(
+            filters={
+                "chat_message_id": chat_message_id,
+                "to_user_id": self.auth.user.user_id,
+            }
+        )
+        # chat_message_to_user should have size 1
+        read_at = None
+        if chat_message_to_user:
+            read_at = chat_message_to_user[0].read_at
+        return ChatMessage(
+            chat_id=message.chat_id,
+            chat_message_id=message.chat_message_id,
+            from_user_id=message.from_user_id,
+            entered_at=message.entered_at,
+            read_at=read_at,
+            content=message.content,
+        )
 
     async def get_chat_messages(self, chat_id: uuid.UUID) -> list[ChatMessage]:
         messages = await self.facade.chat_message.get_all(filters={"chat_id": chat_id})

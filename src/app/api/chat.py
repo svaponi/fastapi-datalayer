@@ -5,6 +5,7 @@ import fastapi
 import pydantic
 
 from app.auth.user_service import UserService
+from app.core.errors import NotFoundException
 from app.domain.messages.message_service import MessageService
 
 router = fastapi.APIRouter()
@@ -24,7 +25,7 @@ async def get_chats(
     return [
         ChatDto(
             chat_id=msg.chat_id,
-            chat_title=msg.chat_title or msg.chat_id.hex[:8],
+            chat_title=msg.chat_title,
             user_ids=msg.user_ids,
         )
         for msg in messages
@@ -36,6 +37,21 @@ async def new_chat(
     message_service: MessageService = fastapi.Depends(),
 ) -> uuid.UUID:
     return await message_service.create_chat()
+
+
+@router.get("/{chat_id}")
+async def get_chat(
+    chat_id: uuid.UUID,
+    message_service: MessageService = fastapi.Depends(),
+) -> ChatDto:
+    chat = await message_service.get_chat(chat_id)
+    if not chat:
+        raise NotFoundException()
+    return ChatDto(
+        chat_id=chat.chat_id,
+        chat_title=chat.chat_title,
+        user_ids=chat.user_ids,
+    )
 
 
 class ChatMessageCreateRequest(pydantic.BaseModel):
@@ -82,6 +98,28 @@ async def get_messages(
         )
         for msg in messages
     ]
+
+
+@router.get("/{chat_id}/messages/{chat_message_id}")
+async def get_message(
+    chat_id: uuid.UUID,
+    chat_message_id: uuid.UUID,
+    message_service: MessageService = fastapi.Depends(),
+    user_service: UserService = fastapi.Depends(),
+) -> ChatMessageDto:
+    msg = await message_service.get_chat_message(chat_id, chat_message_id)
+    if not msg:
+        raise NotFoundException()
+    display_name_by_ids = await user_service.get_display_name_by_ids({msg.from_user_id})
+    return ChatMessageDto(
+        chat_id=msg.chat_id,
+        chat_message_id=msg.chat_message_id,
+        from_user_id=msg.from_user_id,
+        from_user_display_name=display_name_by_ids.get(msg.from_user_id, "unknown"),
+        entered_at=msg.entered_at,
+        read_at=msg.read_at,
+        content=msg.content,
+    )
 
 
 @router.put("/{chat_id}/messages/{chat_message_id}/read", status_code=204)
