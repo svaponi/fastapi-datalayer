@@ -317,14 +317,14 @@ gssauth = ["gssapi ; platform_system != \"Windows\"", "sspilib ; platform_system
 
 [[package]]
 name = "asyncpg-datalayer"
-version = "0.0.3"
+version = "0.0.5a0"
 description = "Datalayer implementation for Postgres using asyncpg"
 optional = false
 python-versions = "<4.0,>=3.12"
 groups = ["main", "dev"]
 files = [
-    {file = "asyncpg_datalayer-0.0.3-py3-none-any.whl", hash = "sha256:fd61e25b900ac2cc0b8236289de126043bd62579aaab23fd4be8ee5cac16b6dd"},
-    {file = "asyncpg_datalayer-0.0.3.tar.gz", hash = "sha256:d776b9ba528f1ce3d7b1d4e0cbdf03f321dd569e7aa9332f060c21671ca487ee"},
+    {file = "asyncpg_datalayer-0.0.5a0-py3-none-any.whl", hash = "sha256:aafc0bd5aef7dc77b20497f9a95dfc66fcc8fde0a913d28daf266652530ec1e7"},
+    {file = "asyncpg_datalayer-0.0.5a0.tar.gz", hash = "sha256:630dc699ea6ef4300dcf22fb937fe88058d7b297dcb64cb151b181ff0756f183"},
 ]
 
 [package.dependencies]
@@ -2422,4 +2422,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "d9bd58a9df39b3e9f3a0c9f4955471c8da0554ebce3881fb172e2555c399292d"
+content-hash = "eb8a460e8fb8d9a5d607f0a3a3f69f3bab849f47b595cee9e09539cead1904f6"
