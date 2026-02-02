@@ -317,14 +317,14 @@ gssauth = ["gssapi ; platform_system != \"Windows\"", "sspilib ; platform_system
 
 [[package]]
 name = "asyncpg-datalayer"
-version = "0.0.5a0"
+version = "0.0.5"
 description = "Datalayer implementation for Postgres using asyncpg"
 optional = false
 python-versions = "<4.0,>=3.12"
 groups = ["main", "dev"]
 files = [
-    {file = "asyncpg_datalayer-0.0.5a0-py3-none-any.whl", hash = "sha256:aafc0bd5aef7dc77b20497f9a95dfc66fcc8fde0a913d28daf266652530ec1e7"},
-    {file = "asyncpg_datalayer-0.0.5a0.tar.gz", hash = "sha256:630dc699ea6ef4300dcf22fb937fe88058d7b297dcb64cb151b181ff0756f183"},
+    {file = "asyncpg_datalayer-0.0.5-py3-none-any.whl", hash = "sha256:7f06360ae7e8d1b1be944cd6a115cf94ac85982c4b98106dc04075f22a85d673"},
+    {file = "asyncpg_datalayer-0.0.5.tar.gz", hash = "sha256:3b4ae0bcd5f1a31af9f0f5e436a8c755e8ff72c78f4071eb600e8a486798361e"},
 ]
 
 [package.dependencies]
@@ -1837,6 +1837,7 @@ python-versions = "*"
 groups = ["main"]
 files = [
     {file = "pywebpush-2.1.2-py3-none-any.whl", hash = "sha256:53b79ec6e85e4c582ed865f088ecf354d81096857e012a7bcaf138359ff3cef9"},
+    {file = "pywebpush-2.1.2.tar.gz", hash = "sha256:797c7cc80cd807f3748500f992b26bae076881d069192824f122d227b8389b8b"},
 ]
 
 [package.dependencies]
@@ -2422,4 +2423,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "eb8a460e8fb8d9a5d607f0a3a3f69f3bab849f47b595cee9e09539cead1904f6"
+content-hash = "ecd33b3ec9735217d8c1b4894630cb8587690896c9f8284b2d04bd6438d1f4b4"
