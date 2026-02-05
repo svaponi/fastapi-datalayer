@@ -37,7 +37,7 @@ class JwtService:
         expires_in: int,
         now: datetime.datetime | None = None,
     ) -> tuple[str, datetime.datetime]:
-        issued_at = now or datetime.datetime.now(tz=datetime.UTC)
+        issued_at = now or datetime.datetime.now(tz=datetime.UTC).replace(microsecond=0)
         expires_at = issued_at + datetime.timedelta(seconds=expires_in)
         payload = {
             **content,
