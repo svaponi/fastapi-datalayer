@@ -14,6 +14,7 @@ from app.core.config import AppConfig
 from app.core.correlation_id import setup_correlation_id
 from app.core.error_handlers import setup_error_handlers
 from app.core.logs import setup_logging
+from app.core.prometheus import setup_prometheus
 from app.domain.create_some_data import create_some_data
 
 
@@ -60,6 +61,9 @@ class App(fastapi.FastAPI):
 
         # Setup API
         setup_api(self)
+
+        # Setup prometheus metrics
+        setup_prometheus(self)
 
         self.db = create_db(os.environ)
         self.state.db = self.db
