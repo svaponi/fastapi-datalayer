@@ -1,7 +1,7 @@
 #
 # See https://fastapi.tiangolo.com/deployment/docker/#docker-image-with-poetry
 #
-FROM python:3.13-slim as requirements-stage
+FROM python:3.13 as requirements-stage
 
 # Install poetry
 RUN pip install "poetry>=2.0.0"
@@ -12,7 +12,7 @@ COPY ./pyproject.toml ./poetry.lock* ./
 RUN poetry self add poetry-plugin-export
 RUN poetry export -f requirements.txt --output requirements.txt --without-hashes
 
-FROM python:3.13-slim
+FROM python:3.13
 
 # define non-root user
 ARG USER=app
