@@ -18,13 +18,6 @@ async def test_health(aclient):
 
 
 @pytest.mark.asyncio
-async def test_unauthorized(aclient):
-    res = await aclient.get("/api/auth/whoami", headers={"authorization": "invalid"})
-    print(f"{res.request.method} {res.url} >> {res.status_code} {res.text}")
-    assert res.status_code == 401
-
-
-@pytest.mark.asyncio
 async def test_docs_not_found(aclient):
     res = await aclient.get("/api/docs")
     assert res.status_code == 404

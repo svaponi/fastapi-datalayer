@@ -24,11 +24,10 @@ def env_vars(postgres_url):
 
 @pytest.mark.asyncio
 async def test_too_many_requests(aclient):
-    _creds = {"email": "jdoe@example.com", "password": "secret"}
 
-    async def _login():
-        return (await aclient.post(f"/api/auth/login", json=_creds)).status_code
+    async def _get():
+        return (await aclient.get(f"/api/users")).status_code
 
-    status_codes = await asyncio.gather(*[_login() for _ in range(10)])
+    status_codes = await asyncio.gather(*[_get() for _ in range(10)])
     assert 500 not in status_codes
     assert 429 in status_codes

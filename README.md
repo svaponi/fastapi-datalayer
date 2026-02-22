@@ -1,3 +1,2 @@
-# properapp
+# fastapi-asyncpg
 
-ProperApp is short for property app.

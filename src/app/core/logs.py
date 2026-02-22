@@ -2,11 +2,17 @@ import json
 import logging
 import sys
 
+import pydantic_settings
 from asgi_correlation_id import CorrelationIdFilter
 
-from app.core.config import LogConfig
+
+class LogConfig(pydantic_settings.BaseSettings):
+    LOG_LEVEL: str = "INFO"
+    LOG_AS_JSON: bool = False
+
 
 # TODO consider refactoring, see https://github.com/mCodingLLC/VideosSampleCode/tree/master/videos/135_modern_logging
+
 
 _IS_LOGGING_INITIALIZED = False
 # see https://docs.python.org/3/library/logging.html#logrecord-attributes
@@ -54,8 +60,8 @@ def _build_json_handler():
 
 
 def _setup_logging(config: LogConfig):
-    log_level = config.LEVEL
-    log_as_json = config.AS_JSON
+    log_level = config.LOG_LEVEL
+    log_as_json = config.LOG_AS_JSON
 
     # remove any predefined root logger handler
     for h in logging.root.handlers:

@@ -1,18 +1,9 @@
 import sys
 
-
 import fastapi
-
-
 from asyncpg_datalayer.db import DB
 
-from .agency import AgencyRepository
-from .chat import ChatRepository
-from .chat_message import ChatMessageRepository
-from .chat_message_to_user import ChatMessageToUserRepository
-from .user_account import UserAccountRepository
-from .user_auth import UserAuthRepository
-from .user_device import UserDeviceRepository
+from .users import UsersRepository
 
 
 def get_db(request: fastapi.Request) -> DB:
@@ -38,12 +29,6 @@ class DatalayerFacade:
     def __init__(self, db: DB = fastapi.Depends(get_db)) -> None:
         super().__init__()
         self.db = db
-        self.agency = AgencyRepository(db)
-        self.chat = ChatRepository(db)
-        self.chat_message = ChatMessageRepository(db)
-        self.chat_message_to_user = ChatMessageToUserRepository(db)
-        self.user_account = UserAccountRepository(db)
-        self.user_auth = UserAuthRepository(db)
-        self.user_device = UserDeviceRepository(db)
+        self.users = UsersRepository(db)
 
     ### custom methods go below ###

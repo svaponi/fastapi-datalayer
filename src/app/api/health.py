@@ -1,7 +1,7 @@
 import fastapi
 from starlette.responses import JSONResponse
 
-from app.health.health_service import HealthService
+from app.domain.health_service import HealthService
 
 router = fastapi.APIRouter()
 

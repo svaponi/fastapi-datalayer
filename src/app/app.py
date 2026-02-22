@@ -12,18 +12,16 @@ from app import migrations_dir
 from app.api.api_factory import setup_api
 from app.core.config import AppConfig
 from app.core.correlation_id import setup_correlation_id
-from app.core.cors import setup_cors
 from app.core.error_handlers import setup_error_handlers
 from app.core.logs import setup_logging
-from app.domain.setup import create_defaults
-from app.email.email_client_factory import create_email_client
+from app.domain.create_some_data import create_some_data
 
 
 @contextlib.asynccontextmanager
 async def _lifespan(app: "App"):
     app.logger.info(f"Starting 🔄")
     await apply_migrations(app.db.postgres_url, migrations_dir)
-    await create_defaults(app.db)
+    await create_some_data(app.db)
     # ...
     app.logger.info("Started ✅ ")
     yield
@@ -60,15 +58,11 @@ class App(fastapi.FastAPI):
         # Http error handlers (equivalent to try block that can handle uncaught exceptions)
         setup_error_handlers(self)
 
-        # Setup cors
-        setup_cors(self, self.config.cors)
-
         # Setup API
         setup_api(self)
 
         self.db = create_db(os.environ)
         self.state.db = self.db
-        self.email_client = create_email_client(self.config.email)
 
         if hasattr(self, "docs_url") and self.docs_url:
 
